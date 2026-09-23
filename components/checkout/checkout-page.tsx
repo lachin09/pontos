@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { useForm, type FieldPath } from "react-hook-form";
+import { useForm, useWatch, type FieldPath } from "react-hook-form";
 import { ArrowLeft, ArrowRight, Check, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,8 @@ import { formatPrice } from "@/lib/utils/format";
 import { useCartStore } from "@/stores/cart.store";
 import { useCheckoutStore } from "@/stores/checkout.store";
 import { Skeleton } from "@/components/ui/skeleton";
+import { DELIVERY_COUNTRIES, getCountryName } from "@/lib/constants/countries";
+import type { NovaPostDivision } from "@/lib/delivery/nova-poshta";
 
 const deliveryLabels = {
   nova_poshta: "Нова пошта",
@@ -33,8 +35,14 @@ const initialValues: CheckoutData = {
   lastName: "",
   phone: "",
   city: "",
+  deliveryCountryCode: "UA",
+  deliveryPostalCode: "",
   deliveryMethod: "nova_poshta",
   deliveryAddress: "",
+  novaPoshtaDeliveryType: "branch",
+  novaPoshtaDivisionId: null,
+  novaPoshtaDivisionName: "",
+  novaPoshtaDivisionCategory: "",
   paymentMethod: "bank_transfer",
   comment: "",
 };
@@ -56,15 +64,52 @@ export function CheckoutPage() {
     paymentStatus: "pending" | "cash_on_delivery";
   } | null>(null);
   const [idempotencyKey, setIdempotencyKey] = useState<string | null>(null);
+  const [divisionResults, setDivisionResults] = useState<NovaPostDivision[]>([]);
+  const [divisionError, setDivisionError] = useState<string | null>(null);
+  const [searchingDivisions, setSearchingDivisions] = useState(false);
 
   const {
     register,
+    control,
+    setValue,
+    trigger,
     handleSubmit,
     formState: { errors, isSubmitting },
   } = useForm<CheckoutData>({
-    defaultValues: savedData ?? initialValues,
+    defaultValues: { ...initialValues, ...savedData },
     mode: "onBlur",
   });
+
+  const countryCode = useWatch({ control, name: "deliveryCountryCode", defaultValue: "UA" });
+  const deliveryMethod = useWatch({ control, name: "deliveryMethod", defaultValue: "nova_poshta" });
+  const novaPoshtaDeliveryType = useWatch({ control, name: "novaPoshtaDeliveryType", defaultValue: "branch" });
+  const city = useWatch({ control, name: "city", defaultValue: "" });
+  const selectedDivisionId = useWatch({ control, name: "novaPoshtaDivisionId", defaultValue: null });
+
+  const searchDivisions = async () => {
+    if (city.trim().length < 2) {
+      setDivisionError("Спочатку введіть місто (щонайменше 2 символи).");
+      return;
+    }
+    setSearchingDivisions(true);
+    setDivisionError(null);
+    setDivisionResults([]);
+    try {
+      const query = new URLSearchParams({ country: countryCode, city: city.trim() });
+      const response = await fetch(`/api/delivery/nova-poshta?${query}`);
+      const result: { results?: NovaPostDivision[]; error?: string } = await response.json();
+      if (!response.ok) {
+        setDivisionError(result.error ?? "Пошук відділень недоступний. Оберіть адресу.");
+        return;
+      }
+      setDivisionResults(result.results ?? []);
+      if (!result.results?.length) setDivisionError("У цьому місті не знайдено пунктів. Спробуйте доставку на адресу.");
+    } catch {
+      setDivisionError("Не вдалося завантажити пункти. Спробуйте доставку на адресу.");
+    } finally {
+      setSearchingDivisions(false);
+    }
+  };
 
   if (!hasHydrated) {
     return (
@@ -224,7 +269,7 @@ export function CheckoutPage() {
             </div>
             <div>
               <dt className="text-muted">Місто</dt>
-              <dd className="mt-1">{savedData.city}</dd>
+              <dd className="mt-1">{savedData.city}, {getCountryName(savedData.deliveryCountryCode)}{savedData.deliveryPostalCode ? ` · ${savedData.deliveryPostalCode}` : ""}</dd>
             </div>
             <div>
               <dt className="text-muted">Доставка</dt>
@@ -322,6 +367,38 @@ export function CheckoutPage() {
               >
                 Доставка
               </h2>
+              <Select
+                id="deliveryCountryCode"
+                label="Країна доставки"
+                options={DELIVERY_COUNTRIES.map(({ code, name }) => ({ value: code, label: name }))}
+                {...register("deliveryCountryCode", {
+                  onChange: (event) => {
+                    const international = event.target.value !== "UA";
+                    if (international) setValue("deliveryMethod", "nova_poshta", { shouldValidate: true });
+                    setValue("novaPoshtaDivisionId", null);
+                    setValue("novaPoshtaDivisionName", "");
+                    setValue("novaPoshtaDivisionCategory", "");
+                    setDivisionResults([]);
+                    setDivisionError(null);
+                  },
+                })}
+              />
+              <Select
+                id="deliveryMethod"
+                label="Спосіб доставки"
+                options={(countryCode === "UA" ? DELIVERY_METHODS : ["nova_poshta"] as const).map((value) => ({ value, label: deliveryLabels[value] }))}
+                error={errors.deliveryMethod?.message}
+                {...register("deliveryMethod", {
+                  validate: validateField("deliveryMethod"),
+                  onChange: () => {
+                    setValue("novaPoshtaDivisionId", null);
+                    setValue("novaPoshtaDivisionName", "");
+                    setValue("novaPoshtaDivisionCategory", "");
+                    setDivisionResults([]);
+                    setDivisionError(null);
+                  },
+                })}
+              />
               <Input
                 id="city"
                 label="Місто"
@@ -329,18 +406,40 @@ export function CheckoutPage() {
                 error={errors.city?.message}
                 {...register("city", { validate: validateField("city") })}
               />
-              <Select
-                id="deliveryMethod"
-                label="Спосіб доставки"
-                options={DELIVERY_METHODS.map((value) => ({
-                  value,
-                  label: deliveryLabels[value],
-                }))}
-                error={errors.deliveryMethod?.message}
-                {...register("deliveryMethod", {
-                  validate: validateField("deliveryMethod"),
-                })}
-              />
+              {countryCode !== "UA" && <p className="text-xs text-muted sm:col-span-2">Для міжнародних адрес ми перевіримо доступність маршруту та вартість доставки після отримання замовлення.</p>}
+              {deliveryMethod === "nova_poshta" && <fieldset className="grid gap-2 sm:col-span-2">
+                <legend className="text-sm font-medium">Тип доставки Новою поштою</legend>
+                {(["branch", "address"] as const).map((type) => <label key={type} className="flex cursor-pointer items-start gap-2 rounded-md border border-border p-3 text-sm">
+                  <input type="radio" value={type} {...register("novaPoshtaDeliveryType", { onChange: () => {
+                    setValue("novaPoshtaDivisionId", null);
+                    setValue("novaPoshtaDivisionName", "");
+                    setValue("novaPoshtaDivisionCategory", "");
+                    setDivisionResults([]);
+                    setDivisionError(null);
+                  } })} />
+                  <span><strong>{type === "branch" ? "Відділення або поштомат" : "Доставка на адресу"}</strong><span className="mt-0.5 block text-xs text-muted">{type === "branch" ? "Оберіть пункт видачі зі списку Нової пошти." : "Вкажіть повну адресу одержувача."}</span></span>
+                </label>)}
+                {novaPoshtaDeliveryType === "branch" ? <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
+                  <p className="text-xs text-muted sm:col-span-2">Пошук пунктів працює, коли магазин підключить API ключ. Поки що можна оформити доставку на адресу.</p>
+                  <Button type="button" variant="outline" disabled={searchingDivisions} onClick={() => void searchDivisions()}>{searchingDivisions ? "Шукаємо…" : "Знайти відділення"}</Button>
+                  {divisionError && <p className="text-sm text-muted sm:col-span-2" role="status">{divisionError}</p>}
+                  {divisionResults.length > 0 && <label className="grid gap-1.5 text-sm sm:col-span-2">Оберіть пункт<select className="min-h-11 rounded-[var(--radius-control)] border border-border bg-background px-3" value={selectedDivisionId ?? ""} onChange={(event) => {
+                    const selected = divisionResults.find((division) => String(division.id) === event.target.value);
+                    if (!selected) return;
+                    setValue("novaPoshtaDivisionId", selected.id, { shouldValidate: true });
+                    setValue("novaPoshtaDivisionName", selected.shortName || selected.name, { shouldValidate: true });
+                    setValue("novaPoshtaDivisionCategory", selected.category);
+                    setValue("city", selected.city, { shouldValidate: true });
+                    setValue("deliveryAddress", selected.address || selected.shortName, { shouldValidate: true });
+                    void trigger(["deliveryAddress", "city"]);
+                  }}><option value="">Оберіть пункт</option>{divisionResults.map((division) => <option key={division.id} value={division.id}>{division.city} · {division.shortName}{division.address ? ` · ${division.address}` : ""}</option>)}</select></label>}
+                  {errors.deliveryAddress?.message && <p className="text-xs text-danger sm:col-span-2">{errors.deliveryAddress.message}</p>}
+                </div> : <>
+                  {countryCode !== "UA" && <Input id="deliveryPostalCode" label="Поштовий індекс" autoComplete="postal-code" error={errors.deliveryPostalCode?.message} {...register("deliveryPostalCode", { validate: validateField("deliveryPostalCode") })} />}
+                  <Input id="deliveryAddress" label="Вулиця, будинок, квартира" className="sm:col-span-2" autoComplete="street-address" error={errors.deliveryAddress?.message} {...register("deliveryAddress", { validate: validateField("deliveryAddress") })} />
+                </>}
+              </fieldset>}
+              {deliveryMethod !== "nova_poshta" && <Input id="deliveryAddress" label="Відділення або адреса" className="sm:col-span-2" autoComplete="street-address" error={errors.deliveryAddress?.message} {...register("deliveryAddress", { validate: validateField("deliveryAddress") })} />}
               <Input
                 id="deliveryAddress"
                 label="Відділення або адреса"

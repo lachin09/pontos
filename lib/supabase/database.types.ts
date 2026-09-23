@@ -166,7 +166,12 @@ export type Database = {
           comment: string | null
           created_at: string
           delivery_address: string
+          delivery_country_code: string
           delivery_method: Database["public"]["Enums"]["delivery_method"]
+          delivery_postal_code: string | null
+          nova_poshta_division_id: number | null
+          nova_poshta_division_name: string | null
+          nova_poshta_division_category: string | null
           delivery_price: number
           first_name: string
           id: string
@@ -186,7 +191,12 @@ export type Database = {
           comment?: string | null
           created_at?: string
           delivery_address: string
+          delivery_country_code?: string
           delivery_method: Database["public"]["Enums"]["delivery_method"]
+          delivery_postal_code?: string | null
+          nova_poshta_division_id?: number | null
+          nova_poshta_division_name?: string | null
+          nova_poshta_division_category?: string | null
           delivery_price?: number
           first_name: string
           id?: string
@@ -206,7 +216,12 @@ export type Database = {
           comment?: string | null
           created_at?: string
           delivery_address?: string
+          delivery_country_code?: string
           delivery_method?: Database["public"]["Enums"]["delivery_method"]
+          delivery_postal_code?: string | null
+          nova_poshta_division_id?: number | null
+          nova_poshta_division_name?: string | null
+          nova_poshta_division_category?: string | null
           delivery_price?: number
           first_name?: string
           id?: string

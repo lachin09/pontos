@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { ArrowDown, ArrowUp, ImagePlus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -26,12 +27,29 @@ export function AdminCategoriesManager({ initialCategories }: { initialCategorie
   const [draft, setDraft] = useState(emptyDraft);
   const [slugEdited, setSlugEdited] = useState(false);
   const [file, setFile] = useState<File | null>(null);
+  const [filePreview, setFilePreview] = useState<string | null>(null);
+  const previewUrl = useRef<string | null>(null);
   const [removeImage, setRemoveImage] = useState(false);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
-  const beginCreate = () => { setEditing("new"); setDraft(emptyDraft); setFile(null); setRemoveImage(false); setSlugEdited(false); setMessage(null); };
-  const beginEdit = (item: AdminCategoryRow) => { setEditing(item.id); setDraft({ name: item.name, slug: item.slug, description: item.description, is_active: item.isActive }); setFile(null); setRemoveImage(false); setSlugEdited(true); setMessage(null); };
+  useEffect(() => () => { if (previewUrl.current) URL.revokeObjectURL(previewUrl.current); }, []);
+  const clearPreview = () => {
+    if (previewUrl.current) URL.revokeObjectURL(previewUrl.current);
+    previewUrl.current = null;
+    setFilePreview(null);
+  };
+  const selectFile = (selected: File | null) => {
+    clearPreview();
+    setFile(selected);
+    if (selected) {
+      previewUrl.current = URL.createObjectURL(selected);
+      setFilePreview(previewUrl.current);
+    }
+  };
+
+  const beginCreate = () => { setEditing("new"); setDraft(emptyDraft); selectFile(null); setRemoveImage(false); setSlugEdited(false); setMessage(null); };
+  const beginEdit = (item: AdminCategoryRow) => { setEditing(item.id); setDraft({ name: item.name, slug: item.slug, description: item.description, is_active: item.isActive }); selectFile(null); setRemoveImage(false); setSlugEdited(true); setMessage(null); };
   const save = async () => {
     setBusy(true); setMessage(null);
     try {
@@ -57,7 +75,7 @@ export function AdminCategoriesManager({ initialCategories }: { initialCategorie
         const row: AdminCategoryRow = { id, name: draft.name, slug: draft.slug, description: draft.description, isActive: draft.is_active, imageUrl, sortOrder: payload.sort_order };
         return editing === "new" ? [...items, row] : items.map((item) => item.id === id ? row : item);
       });
-      setEditing(null); setFile(null); setRemoveImage(false);
+      setEditing(null); selectFile(null); setRemoveImage(false);
     } catch { setMessage("Не вдалося з’єднатися із сервером."); }
     finally { setBusy(false); }
   };
@@ -109,10 +127,12 @@ export function AdminCategoriesManager({ initialCategories }: { initialCategorie
         <label className="grid gap-1.5 text-sm">Посилання<input value={draft.slug} onChange={(e) => { setSlugEdited(true); setDraft((d) => ({ ...d, slug: slugify(e.target.value) })); }} maxLength={160} className="min-h-11 rounded-[var(--radius-control)] border border-border bg-surface px-3.5 text-sm outline-none focus:border-focus" /></label>
         <label className="grid gap-1.5 text-sm sm:col-span-2">Опис<textarea value={draft.description} onChange={(e) => setDraft((d) => ({ ...d, description: e.target.value }))} maxLength={2000} rows={3} className="min-h-28 resize-y rounded-[var(--radius-control)] border border-border bg-surface px-3.5 py-3 text-sm outline-none focus:border-focus" /></label>
         <label className="flex items-center gap-2 text-sm"><input type="checkbox" checked={draft.is_active} onChange={(e) => setDraft((d) => ({ ...d, is_active: e.target.checked }))} />Активна в каталозі</label>
-        <label className="flex cursor-pointer items-center gap-2 text-sm text-muted"><ImagePlus size={18} />{file?.name ?? "Завантажити фото (до 10 МБ)"}<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" onChange={(e) => { setFile(e.target.files?.[0] ?? null); setRemoveImage(false); }} /></label>
+        <label className="flex cursor-pointer items-center gap-2 text-sm text-muted"><ImagePlus size={18} />{file?.name ?? "Завантажити фото (до 10 МБ)"}<input type="file" accept="image/jpeg,image/png,image/webp,image/avif" className="sr-only" onChange={(e) => { selectFile(e.target.files?.[0] ?? null); setRemoveImage(false); }} /></label>
       </div>
+      <p className="mt-3 text-xs text-muted">Це фото показуватиметься на картці категорії в каталозі.</p>
+      {(filePreview || (!removeImage && editing !== "new" && categories.find((item) => item.id === editing)?.imageUrl)) && <div className="relative mt-3 aspect-[2/1] max-w-sm overflow-hidden rounded-md border border-border bg-surface-muted"><Image src={filePreview ?? categories.find((item) => item.id === editing)?.imageUrl ?? ""} alt={`Фото категорії ${draft.name || ""}`} fill unoptimized={Boolean(filePreview)} sizes="(max-width: 640px) 100vw, 384px" className="object-cover" /></div>}
       {editing !== "new" && categories.find((item) => item.id === editing)?.imageUrl && <button type="button" className="mt-3 text-sm text-danger underline" onClick={() => { setRemoveImage(true); setFile(null); }}>Видалити поточне фото</button>}
-      <div className="mt-5 flex gap-3"><Button disabled={busy} onClick={() => void save()}>{busy ? "Збереження…" : "Зберегти"}</Button><Button variant="secondary" disabled={busy} onClick={() => setEditing(null)}>Скасувати</Button></div>
+      <div className="mt-5 flex gap-3"><Button disabled={busy} onClick={() => void save()}>{busy ? "Збереження…" : "Зберегти"}</Button><Button variant="secondary" disabled={busy} onClick={() => { setEditing(null); selectFile(null); }}>Скасувати</Button></div>
     </div>}
     {categories.length === 0 ? <p className="rounded-[var(--radius-card)] border border-border bg-surface p-8 text-center text-sm text-muted">Категорій поки немає.</p> : <ul className="divide-y divide-border overflow-hidden rounded-[var(--radius-card)] border border-border bg-surface">{categories.map((item, index) => <li key={item.id} className="flex flex-wrap items-center gap-4 p-4">
       <div className="size-16 shrink-0 rounded-md bg-surface-muted bg-cover bg-center" role={item.imageUrl ? "img" : undefined} aria-label={item.imageUrl ? item.name : undefined} style={item.imageUrl ? { backgroundImage: `url("${item.imageUrl}")` } : undefined} />

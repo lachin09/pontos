@@ -21,6 +21,8 @@ The protected admin area is at `/admin`; product, category, and order management
 
 New orders appear in the bell in the admin header. Alerts are stored in Supabase and remain unread until opened; the bell checks for new orders every 20 seconds while an admin page is open. Apply database changes with `npx supabase db push`.
 
+Checkout accepts international destinations and street addresses. Nova Post branch search requires a server-only `NOVA_POSHTA_API_KEY`; without it, customers can still choose address delivery. Add the key to `.env.local` for development and to Vercel Environment Variables for production. Never use a `NEXT_PUBLIC_` prefix for this key.
+
 ## Checks
 
 ```bash
