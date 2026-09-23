@@ -8,7 +8,7 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
   const { id } = await params;
   const supabase = await createSupabaseAuthServerClient();
   const [{ data: order, error }, { data: history }] = await Promise.all([
-    supabase.from("orders").select("id, order_number, first_name, last_name, phone, customer_email, city, delivery_method, delivery_address, payment_method, payment_status, status, comment, subtotal, delivery_price, total, created_at, order_items(id, product_name, product_image, size, color, price, quantity, subtotal)").eq("id", id).maybeSingle(),
+    supabase.from("orders").select("id, order_number, first_name, last_name, phone, city, delivery_method, delivery_address, payment_method, payment_status, status, comment, subtotal, delivery_price, total, created_at, order_items(id, product_name, product_image, size, color, price, quantity, subtotal)").eq("id", id).maybeSingle(),
     supabase.from("order_status_history").select("id, old_status, new_status, old_payment_status, new_payment_status, created_at").eq("order_id", id).order("created_at", { ascending: false }),
   ]);
   if (error || !order) notFound();
@@ -18,7 +18,6 @@ export default async function AdminOrderPage({ params }: { params: Promise<{ id:
     firstName: order.first_name,
     lastName: order.last_name,
     phone: order.phone,
-    email: order.customer_email,
     city: order.city,
     deliveryMethod: order.delivery_method,
     deliveryAddress: order.delivery_address,

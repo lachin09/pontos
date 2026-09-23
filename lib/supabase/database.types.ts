@@ -169,7 +169,6 @@ export type Database = {
           delivery_method: Database["public"]["Enums"]["delivery_method"]
           delivery_price: number
           first_name: string
-          customer_email: string | null
           id: string
           idempotency_key: string
           last_name: string
@@ -190,7 +189,6 @@ export type Database = {
           delivery_method: Database["public"]["Enums"]["delivery_method"]
           delivery_price?: number
           first_name: string
-          customer_email?: string | null
           id?: string
           idempotency_key?: string
           last_name: string
@@ -211,7 +209,6 @@ export type Database = {
           delivery_method?: Database["public"]["Enums"]["delivery_method"]
           delivery_price?: number
           first_name?: string
-          customer_email?: string | null
           id?: string
           idempotency_key?: string
           last_name?: string
@@ -226,44 +223,43 @@ export type Database = {
         }
         Relationships: []
       }
-      notification_outbox: {
+      admin_notifications: {
         Row: {
           id: string
           order_id: string
-          recipient_email: string
-          recipient_type: string
-          event_type: string
-          payload: Json
-          attempts: number
-          sent_at: string | null
-          last_error: string | null
+          order_number: number
+          title: string
+          message: string
+          is_read: boolean
           created_at: string
         }
         Insert: {
           id?: string
           order_id: string
-          recipient_email: string
-          recipient_type: string
-          event_type: string
-          payload: Json
-          attempts?: number
-          sent_at?: string | null
-          last_error?: string | null
+          order_number: number
+          title: string
+          message: string
+          is_read?: boolean
           created_at?: string
         }
         Update: {
           id?: string
           order_id?: string
-          recipient_email?: string
-          recipient_type?: string
-          event_type?: string
-          payload?: Json
-          attempts?: number
-          sent_at?: string | null
-          last_error?: string | null
+          order_number?: number
+          title?: string
+          message?: string
+          is_read?: boolean
           created_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "admin_notifications_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       order_status_history: {
         Row: {
@@ -459,7 +455,6 @@ export type Database = {
           p_idempotency_key: string
           p_items: Json
           p_public_storage_url: string
-          p_admin_notification_email: string
         }
         Returns: {
           order_number: number

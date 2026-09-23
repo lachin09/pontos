@@ -42,7 +42,6 @@ export async function POST(request: Request) {
         first_name: input.data.customer.firstName,
         last_name: input.data.customer.lastName,
         phone: input.data.customer.phone,
-        email: input.data.customer.email,
         city: input.data.customer.city,
         delivery_method: input.data.customer.deliveryMethod,
         delivery_address: input.data.customer.deliveryAddress,
@@ -54,7 +53,6 @@ export async function POST(request: Request) {
         quantity: item.quantity,
       })),
       p_public_storage_url: `${process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/+$/, "")}/storage/v1/object/public/product-images/`,
-      p_admin_notification_email: process.env.ADMIN_ORDER_EMAIL?.trim() || "",
     });
 
     if (error || !data?.[0]) {
@@ -72,10 +70,6 @@ export async function POST(request: Request) {
     }
 
     const order = data[0];
-    if (order.was_created) {
-      const { dispatchPendingNotifications } = await import("@/lib/notifications/dispatch");
-      await dispatchPendingNotifications({ orderNumber: order.order_number });
-    }
     return NextResponse.json(
       {
         orderNumber: order.order_number,

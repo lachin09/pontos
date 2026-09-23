@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { requireAdmin } from "@/lib/supabase/require-admin";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
+import { AdminNotificationBell } from "@/components/admin/admin-notification-bell";
 
 export const metadata: Metadata = {
   robots: { index: false, follow: false },
@@ -46,7 +47,10 @@ export default async function AdminLayout({
               Замовлення
             </Link>
           </div>
-          <AdminLogoutButton />
+          <div className="flex items-center gap-2">
+            <AdminNotificationBell />
+            <AdminLogoutButton />
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-[1440px] px-page py-10 sm:py-14">

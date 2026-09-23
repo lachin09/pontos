@@ -32,7 +32,6 @@ const initialValues: CheckoutData = {
   firstName: "",
   lastName: "",
   phone: "",
-  email: "",
   city: "",
   deliveryMethod: "nova_poshta",
   deliveryAddress: "",
@@ -192,7 +191,7 @@ export function CheckoutPage() {
           <span className="grid size-12 place-items-center rounded-full bg-accent/10 text-accent"><Check size={24} aria-hidden="true" /></span>
           <p className="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-muted">PONTOS · essentials</p>
           <h2 id="confirmation-heading" className="mt-2 text-2xl font-medium">Замовлення оформлено</h2>
-          <p className="mt-2 text-sm text-muted">Номер замовлення <strong className="text-foreground">#{confirmation.orderNumber}</strong>. Підтвердження та оновлення надішлемо на вашу електронну адресу.</p>
+          <p className="mt-2 text-sm text-muted">Номер замовлення <strong className="text-foreground">#{confirmation.orderNumber}</strong>. Ми зв’яжемося з вами за вказаним номером телефону.</p>
           <div className="mt-6 grid gap-3 border-y border-border py-4 text-sm sm:grid-cols-2">
             <span className="text-muted">До сплати за товари</span>
             <strong className="sm:text-right">{formatPrice(confirmation.total)}</strong>
@@ -222,10 +221,6 @@ export function CheckoutPage() {
             <div>
               <dt className="text-muted">Телефон</dt>
               <dd className="mt-1">{savedData.phone}</dd>
-            </div>
-            <div>
-              <dt className="text-muted">Електронна адреса</dt>
-              <dd className="mt-1">{savedData.email}</dd>
             </div>
             <div>
               <dt className="text-muted">Місто</dt>
@@ -314,14 +309,6 @@ export function CheckoutPage() {
                 placeholder="+380…"
                 error={errors.phone?.message}
                 {...register("phone", { validate: validateField("phone") })}
-              />
-              <Input
-                id="email"
-                label="Електронна адреса"
-                type="email"
-                autoComplete="email"
-                error={errors.email?.message}
-                {...register("email", { validate: validateField("email") })}
               />
             </section>
 

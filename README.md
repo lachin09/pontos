@@ -19,7 +19,7 @@ The database schema, RLS policies, starter categories, secure order function, an
 
 The protected admin area is at `/admin`; product, category, and order management are under `/admin/products`, `/admin/categories`, and `/admin/orders`. Only accounts with an active row in `admin_profiles` can sign in. See [DATABASE.md](./DATABASE.md#give-an-owner-access-to-admin) to grant or revoke owner access.
 
-Order emails use Resend. Set `RESEND_API_KEY`, a verified-domain `PONTOS_EMAIL_FROM`, `ADMIN_ORDER_EMAIL`, and a random `CRON_SECRET` in local and production environment settings. New-order emails are attempted immediately; failed messages remain queued for the scheduled retry. The order/status tables and notification queue must be migrated with `npx supabase db push`.
+New orders appear in the bell in the admin header. Alerts are stored in Supabase and remain unread until opened; the bell checks for new orders every 20 seconds while an admin page is open. Apply database changes with `npx supabase db push`.
 
 ## Checks
 

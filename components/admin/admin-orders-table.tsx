@@ -12,7 +12,6 @@ export interface AdminOrderRow {
   firstName: string;
   lastName: string;
   phone: string;
-  email: string | null;
   city: string;
   total: number;
   status: OrderStatus;
@@ -27,14 +26,14 @@ export function AdminOrdersTable({ orders }: { orders: AdminOrderRow[] }) {
   const [paymentStatus, setPaymentStatus] = useState("all");
   const filtered = useMemo(() => orders.filter((order) => {
     const q = query.trim().toLocaleLowerCase("uk");
-    const matchesQuery = !q || `#${order.orderNumber} ${order.firstName} ${order.lastName} ${order.phone} ${order.email ?? ""}`.toLocaleLowerCase("uk").includes(q);
+    const matchesQuery = !q || `#${order.orderNumber} ${order.firstName} ${order.lastName} ${order.phone}`.toLocaleLowerCase("uk").includes(q);
     return matchesQuery && (status === "all" || order.status === status) && (paymentStatus === "all" || order.paymentStatus === paymentStatus);
   }), [orders, query, status, paymentStatus]);
   const date = (value: string) => new Intl.DateTimeFormat("uk-UA", { dateStyle: "medium", timeStyle: "short" }).format(new Date(value));
 
   return <section className="mt-8">
     <div className="grid gap-3 sm:grid-cols-3">
-      <label className="grid gap-1 text-xs text-muted">Пошук<input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="№, ім’я, телефон, email" className="min-h-11 rounded-[var(--radius-control)] border border-border bg-surface px-3 text-sm text-foreground outline-none focus:border-focus" /></label>
+      <label className="grid gap-1 text-xs text-muted">Пошук<input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="№, ім’я, телефон" className="min-h-11 rounded-[var(--radius-control)] border border-border bg-surface px-3 text-sm text-foreground outline-none focus:border-focus" /></label>
       <label className="grid gap-1 text-xs text-muted">Статус замовлення<select value={status} onChange={(event) => setStatus(event.target.value)} className="min-h-11 rounded-[var(--radius-control)] border border-border bg-surface px-3 text-sm text-foreground"><option value="all">Усі</option>{ORDER_STATUSES.map((value) => <option key={value} value={value}>{ORDER_STATUS_LABELS[value]}</option>)}</select></label>
       <label className="grid gap-1 text-xs text-muted">Статус оплати<select value={paymentStatus} onChange={(event) => setPaymentStatus(event.target.value)} className="min-h-11 rounded-[var(--radius-control)] border border-border bg-surface px-3 text-sm text-foreground"><option value="all">Усі</option>{PAYMENT_STATUSES.map((value) => <option key={value} value={value}>{PAYMENT_STATUS_LABELS[value]}</option>)}</select></label>
     </div>
