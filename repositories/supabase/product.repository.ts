@@ -73,7 +73,10 @@ export function createSupabaseProductRepository(): ProductRepository {
         .eq("is_published", true)
         .order("created_at", { ascending: false });
 
-      if (error) throw new Error("Не вдалося завантажити товари.");
+      if (error) {
+        console.error("Failed to load published products from Supabase", error);
+        throw new Error("Не вдалося завантажити товари.");
+      }
       return (data as ProductRow[]).map((row) => toProduct(row, client));
     },
     async getBySlug(slug) {

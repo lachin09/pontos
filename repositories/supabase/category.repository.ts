@@ -41,7 +41,10 @@ export function createSupabaseCategoryRepository(): CategoryRepository {
         .eq("is_active", true)
         .order("sort_order", { ascending: true });
 
-      if (error) throw new Error("Не вдалося завантажити категорії.");
+      if (error) {
+        console.error("Failed to load active categories from Supabase", error);
+        throw new Error("Не вдалося завантажити категорії.");
+      }
       return data.map((row) => toCategory(row, client));
     },
     async getActiveBySlug(slug) {
