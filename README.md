@@ -1,36 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# PONTOS storefront
 
-## Getting Started
+A Next.js clothing storefront built phase by phase from `../CREATION_PLAN.md`. The storefront catalog reads published products from Supabase. Checkout creates orders through a server route that validates the request and asks Postgres to price the cart and reserve stock atomically.
 
-First, run the development server:
+## Development
+
+Requirements: Node.js and npm.
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000).
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Supabase database
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The database schema, RLS policies, starter categories, secure order function, and `product-images` storage bucket are in `supabase/migrations/`. The PONTOS project is linked for this workspace. `.env.example` documents the required variable names; the ignored `.env.local` is configured for this workspace. Keep credentials there; never commit it or expose a secret/service role key in a `NEXT_PUBLIC_` variable. See [DATABASE.md](./DATABASE.md) for access policy details.
 
-## Learn More
+The protected admin area is at `/admin`; product, category, and order management are under `/admin/products`, `/admin/categories`, and `/admin/orders`. Only accounts with an active row in `admin_profiles` can sign in. See [DATABASE.md](./DATABASE.md#give-an-owner-access-to-admin) to grant or revoke owner access.
 
-To learn more about Next.js, take a look at the following resources:
+Order emails use Resend. Set `RESEND_API_KEY`, a verified-domain `PONTOS_EMAIL_FROM`, `ADMIN_ORDER_EMAIL`, and a random `CRON_SECRET` in local and production environment settings. New-order emails are attempted immediately; failed messages remain queued for the scheduled retry. The order/status tables and notification queue must be migrated with `npx supabase db push`.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Checks
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+```bash
+npm run lint
+npx tsc --noEmit
+npm run build
+```

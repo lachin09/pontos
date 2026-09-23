@@ -1,0 +1,61 @@
+import type { Category } from "@/types/category";
+
+const createdAt = "2025-01-15T09:00:00.000Z";
+
+export const mockCategories: Category[] = [
+  {
+    id: "category-tshirts",
+    name: "Футболки",
+    slug: "t-shirts",
+    description: "Базові футболки з приємних натуральних тканин.",
+    imageUrl: "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab",
+    sortOrder: 1,
+    isActive: true,
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: "category-sweatshirts",
+    name: "Світшоти та худі",
+    slug: "sweatshirts",
+    description: "Затишні речі для прохолодних днів і щоденних образів.",
+    imageUrl: "https://images.unsplash.com/photo-1556821840-3a63f95609a7",
+    sortOrder: 2,
+    isActive: true,
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: "category-bottoms",
+    name: "Штани",
+    slug: "trousers",
+    description: "Комфортний крій і продумані деталі на кожен день.",
+    imageUrl: "https://images.unsplash.com/photo-1542272604-787c3835535d",
+    sortOrder: 3,
+    isActive: true,
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: "category-shirts",
+    name: "Сорочки та верхній одяг",
+    slug: "shirts-and-outerwear",
+    description: "Шари для мінливої погоди та виразного силуету.",
+    imageUrl: "https://images.unsplash.com/photo-1598033129183-c4f50c736f10",
+    sortOrder: 4,
+    isActive: true,
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: "category-accessories",
+    name: "Аксесуари",
+    slug: "accessories",
+    description: "Невеликі речі, які завершують образ.",
+    imageUrl: "https://images.unsplash.com/photo-1588850561407-ed78c282e89b",
+    sortOrder: 5,
+    isActive: true,
+    createdAt,
+    updatedAt: createdAt,
+  },
+];
