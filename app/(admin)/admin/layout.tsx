@@ -46,6 +46,12 @@ export default async function AdminLayout({
             >
               Замовлення
             </Link>
+            <Link
+              href="/admin/settings/contacts"
+              className="hidden text-sm text-muted hover:text-foreground sm:inline"
+            >
+              Контакти
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             <AdminNotificationBell />

@@ -1,6 +1,4 @@
 const hryvniaFormatter = new Intl.NumberFormat("uk-UA", {
-  style: "currency",
-  currency: "UAH",
   maximumFractionDigits: 0,
 });
 
@@ -9,7 +7,9 @@ const dateFormatter = new Intl.DateTimeFormat("uk-UA", {
 });
 
 export function formatPrice(amount: number): string {
-  return hryvniaFormatter.format(amount);
+  // Currency display differs between Node and browsers (`грн` vs `₴`).
+  // Keep the symbol explicit so server-rendered and hydrated text match.
+  return `${hryvniaFormatter.format(amount)} ₴`;
 }
 
 export function formatDate(value: string | Date): string {
