@@ -24,7 +24,7 @@ function profileUrl(value: string, domain: string) {
 }
 
 function resolveLinks(records: ContactLinkRecord[]): ContactLink[] {
-  return records.flatMap((record) => {
+  return records.flatMap((record): ContactLink[] => {
     const value = record.value.trim();
     if (record.type === "phone") {
       const digits = normalizedPhone(value);
