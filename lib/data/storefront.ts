@@ -1,26 +1,16 @@
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { CACHE_TAGS } from "@/lib/data/cache-tags";
 import {
-  CONTACT_LINKS_SETTING_KEY,
-  contactLinksSchema,
-  type ContactLinkRecord,
-} from "@/lib/validators/contact-links";
-import { createSupabaseCategoryRepository } from "@/repositories/supabase/category.repository";
-import { createSupabaseProductRepository } from "@/repositories/supabase/product.repository";
-import { createCategoryService } from "@/services/category.service";
-import { createProductService } from "@/services/product.service";
+  categoryService,
+  getStoreSettings,
+  productService,
+} from "@/lib/server/storefront-services";
 
 // Storefront reads are cached across requests and invalidated by tag from the
 // admin routes (see lib/data/revalidate.ts). The time-based fallback covers
 // changes made directly in the Supabase dashboard.
 const FALLBACK_REVALIDATE_SECONDS = 300;
-
-const productService = createProductService(createSupabaseProductRepository());
-const categoryService = createCategoryService(
-  createSupabaseCategoryRepository(),
-);
 
 export const getPublishedProducts = unstable_cache(
   () => productService.listProducts(),
@@ -51,24 +41,13 @@ export const getActiveCategories = unstable_cache(
 );
 
 export const getContactLinks = unstable_cache(
-  async (): Promise<ContactLinkRecord[]> => {
-    // store_settings has no public RLS policy, so this single public key is
-    // read server-side with the service role and never exposed to the client.
-    const supabase = createSupabaseAdminClient();
-    const { data, error } = await supabase
-      .from("store_settings")
-      .select("value")
-      .eq("key", CONTACT_LINKS_SETTING_KEY)
-      .maybeSingle();
-
-    if (error) {
-      console.error("Failed to load contact links from Supabase:", error.message);
-      throw new Error("Не вдалося завантажити контакти.");
-    }
-
-    const parsed = contactLinksSchema.safeParse(data?.value ?? { links: [] });
-    return parsed.success ? parsed.data.links : [];
-  },
+  () => getStoreSettings().getContactLinks(),
   ["storefront:contact-links"],
   { tags: [CACHE_TAGS.contactLinks], revalidate: FALLBACK_REVALIDATE_SECONDS },
+);
+
+export const getStoreInfo = unstable_cache(
+  () => getStoreSettings().getStoreInfo(),
+  ["storefront:store-info"],
+  { tags: [CACHE_TAGS.storeInfo], revalidate: FALLBACK_REVALIDATE_SECONDS },
 );

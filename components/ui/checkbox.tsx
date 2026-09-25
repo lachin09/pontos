@@ -24,7 +24,7 @@ export function Checkbox({
       <input
         id={id}
         type="checkbox"
-        className="mt-0.5 size-4 accent-accent focus-visible:outline-focus"
+        className="mt-0.5 size-[1.125rem] accent-accent focus-visible:outline-focus"
         aria-describedby={description ? `${id}-description` : undefined}
         {...props}
       />

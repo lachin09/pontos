@@ -75,7 +75,11 @@ export function createSupabaseProductRepository(): ProductRepository {
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Failed to load published products from Supabase:", error.message, error);
+        console.error(
+          "Failed to load published products from Supabase:",
+          error.message,
+          error,
+        );
         throw new Error("Не вдалося завантажити товари.");
       }
       return (data as ProductRow[]).map((row) => toProduct(row, client));
@@ -90,7 +94,11 @@ export function createSupabaseProductRepository(): ProductRepository {
         .maybeSingle();
 
       if (error) {
-        console.error("Failed to load product by slug from Supabase:", error.message, error);
+        console.error(
+          "Failed to load product by slug from Supabase:",
+          error.message,
+          error,
+        );
         throw new Error("Не вдалося завантажити товар.");
       }
       return data ? toProduct(data as ProductRow, client) : null;
@@ -107,7 +115,11 @@ export function createSupabaseProductRepository(): ProductRepository {
         .limit(limit);
 
       if (error) {
-        console.error("Failed to load related products from Supabase:", error.message, error);
+        console.error(
+          "Failed to load related products from Supabase:",
+          error.message,
+          error,
+        );
         throw new Error("Не вдалося завантажити товари.");
       }
       return (data as ProductRow[]).map((row) => toProduct(row, client));

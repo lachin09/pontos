@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, type ReactNode } from "react";
+import { defaultVariant } from "@/lib/product/variants";
 import type { Product } from "@/types/product";
 
 type ProductColorContextValue = {
@@ -13,7 +14,9 @@ const defaultContextValue: ProductColorContextValue = {
   setSelectedColor: () => {},
 };
 
-const ProductColorContext = createContext<ProductColorContextValue | null>(null);
+const ProductColorContext = createContext<ProductColorContextValue | null>(
+  null,
+);
 
 export function ProductColorProvider({
   product,
@@ -22,10 +25,7 @@ export function ProductColorProvider({
   product: Product;
   children: ReactNode;
 }) {
-  const initialColor =
-    product.variants.find((variant) => variant.isAvailable)?.color ??
-    product.variants[0]?.color ??
-    "";
+  const initialColor = defaultVariant(product.variants)?.color ?? "";
   const [selectedColor, setSelectedColor] = useState(initialColor);
   const [prevProductId, setPrevProductId] = useState(product.id);
 

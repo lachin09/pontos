@@ -17,11 +17,14 @@ export function CartLink() {
           ? `Кошик, ${formatItemCount(quantity)}`
           : "Кошик"
       }
-      className="relative grid size-10 place-items-center rounded-full text-foreground transition-colors hover:bg-surface-muted"
+      className="relative grid size-11 place-items-center rounded-full text-foreground transition-colors hover:bg-surface-muted"
     >
       <ShoppingBag size={19} aria-hidden="true" />
       {hasHydrated && quantity > 0 ? (
-        <span className="absolute -right-0.5 -top-0.5 grid min-h-4 min-w-4 place-items-center rounded-full bg-accent px-1 text-[0.625rem] font-semibold leading-none text-accent-foreground">
+        <span
+          key={quantity}
+          className="absolute right-0.5 top-0.5 grid min-h-4 min-w-4 animate-rise place-items-center rounded-full bg-accent px-1 text-[0.625rem] font-semibold leading-none text-accent-foreground"
+        >
           {quantity > 99 ? "99+" : quantity}
         </span>
       ) : null}

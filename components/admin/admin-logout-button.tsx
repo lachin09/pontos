@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { adminAuthApi } from "@/lib/api/admin";
 
 export function AdminLogoutButton() {
   const router = useRouter();
@@ -14,11 +15,7 @@ export function AdminLogoutButton() {
     if (pending) return;
     setPending(true);
     try {
-      const response = await fetch("/api/admin/logout", { method: "POST" });
-      if (!response.ok) {
-        setError(true);
-        return;
-      }
+      await adminAuthApi.logout();
       router.replace("/admin/login");
       router.refresh();
     } catch {

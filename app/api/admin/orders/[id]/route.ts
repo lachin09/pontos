@@ -1,20 +1,29 @@
-import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getActiveAdminSession } from "@/lib/supabase/admin-session";
+import { badRequest, notFound } from "@/lib/errors";
+import { adminRoute, json, readJson } from "@/lib/http/route";
 import { ORDER_STATUSES, PAYMENT_STATUSES } from "@/lib/constants/order";
 
-const updateSchema = z.object({ status: z.enum(ORDER_STATUSES), paymentStatus: z.enum(PAYMENT_STATUSES) });
+type Context = RouteContext<"/api/admin/orders/[id]">;
 
-export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
-  const session = await getActiveAdminSession();
-  if (!session) return NextResponse.json({ error: "Потрібен доступ адміністратора." }, { status: 401 });
-  const { id } = await context.params;
-  let body: unknown;
-  try { body = await request.json(); } catch { return NextResponse.json({ error: "Перевірте статуси замовлення." }, { status: 400 }); }
-  const parsed = updateSchema.safeParse(body);
-  if (!parsed.success) return NextResponse.json({ error: "Оберіть коректні статуси." }, { status: 400 });
-  const { data, error } = await session.supabase.rpc("update_order_admin", { p_order_id: id, p_status: parsed.data.status, p_payment_status: parsed.data.paymentStatus });
-  if (error) return NextResponse.json({ error: "Не вдалося оновити замовлення." }, { status: 400 });
-  if (!data) return NextResponse.json({ error: "Замовлення не знайдено." }, { status: 404 });
-  return NextResponse.json({ ok: true });
-}
+const updateSchema = z.object({
+  status: z.enum(ORDER_STATUSES),
+  paymentStatus: z.enum(PAYMENT_STATUSES),
+});
+
+export const PATCH = adminRoute<Context>(
+  async (request, { params, services }) => {
+    const { id } = await params;
+    const { status, paymentStatus } = await readJson(request, updateSchema, {
+      message: "Перевірте статуси замовлення.",
+      invalidMessage: "Оберіть коректні статуси.",
+    });
+    let updated: boolean;
+    try {
+      updated = await services.orders.updateStatus(id, status, paymentStatus);
+    } catch {
+      throw badRequest("Не вдалося оновити замовлення.");
+    }
+    if (!updated) throw notFound("Замовлення не знайдено.");
+    return json({ ok: true });
+  },
+);

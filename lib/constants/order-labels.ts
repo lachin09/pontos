@@ -1,4 +1,9 @@
-import type { DeliveryMethod, OrderStatus, PaymentMethod, PaymentStatus } from "@/lib/constants/order";
+import type {
+  DeliveryMethod,
+  OrderStatus,
+  PaymentMethod,
+  PaymentStatus,
+} from "@/lib/constants/order";
 
 export const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   new: "Нове",

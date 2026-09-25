@@ -39,7 +39,7 @@ export function Select({
         id={id}
         aria-invalid={Boolean(error)}
         aria-describedby={helpId}
-        className={`min-h-11 w-full rounded-[var(--radius-control)] border border-border bg-surface px-3.5 text-sm text-foreground focus:border-focus focus:outline-none ${error ? "border-danger" : ""} ${className}`}
+        className={`min-h-11 w-full rounded-[var(--radius-control)] border border-border bg-surface px-3.5 text-base text-foreground sm:text-sm transition-[border-color,box-shadow] hover:border-muted/60 focus:border-focus focus:outline-none focus:ring-4 focus:ring-focus/15 ${error ? "border-danger" : ""} ${className}`}
         {...props}
       >
         {placeholder ? (

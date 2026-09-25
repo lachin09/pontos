@@ -2,7 +2,7 @@ export { Alert } from "@/components/ui/alert";
 export type { AlertProps, AlertVariant } from "@/components/ui/alert";
 export { Badge } from "@/components/ui/badge";
 export type { BadgeProps, BadgeVariant } from "@/components/ui/badge";
-export { Button } from "@/components/ui/button";
+export { Button, buttonClasses } from "@/components/ui/button";
 export type {
   ButtonProps,
   ButtonSize,

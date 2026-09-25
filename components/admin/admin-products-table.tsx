@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { Search, Trash2 } from "lucide-react";
 import { formatPrice } from "@/lib/utils/format";
+import { adminProductsApi } from "@/lib/api/admin";
+import { errorMessage } from "@/lib/api/client";
 
 export interface AdminProductListItem {
   id: string;
@@ -47,19 +49,12 @@ export function AdminProductsTable({
     setPendingId(product.id);
     setNotice(null);
     try {
-      const response = await fetch(`/api/admin/products/${product.id}`, {
-        method: "DELETE",
-      });
-      const result: { error?: string } = await response.json();
-      if (!response.ok) {
-        setNotice(result.error ?? "Не вдалося видалити товар.");
-        return;
-      }
+      await adminProductsApi.remove(product.id);
       setProducts((current) =>
         current.filter((entry) => entry.id !== product.id),
       );
-    } catch {
-      setNotice("Не вдалося з’єднатися із сервером.");
+    } catch (error) {
+      setNotice(errorMessage(error, "Не вдалося з’єднатися із сервером."));
     } finally {
       setPendingId(null);
     }

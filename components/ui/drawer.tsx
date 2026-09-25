@@ -26,11 +26,14 @@ export function Drawer({
 
   if (!open) return null;
 
-  const sideClass = side === "right" ? "right-0 border-l" : "left-0 border-r";
+  const sideClass =
+    side === "right"
+      ? "right-0 border-l animate-slide-in-right"
+      : "left-0 border-r animate-fade-in";
 
   return (
     <div
-      className="fixed inset-0 z-50 bg-foreground/40"
+      className="fixed inset-0 z-50 animate-fade-in bg-foreground/40 backdrop-blur-[2px]"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -54,14 +57,16 @@ export function Drawer({
             type="button"
             variant="ghost"
             size="sm"
-            aria-label="Close panel"
+            aria-label="Закрити"
             onClick={onClose}
             className="size-9 min-h-9 px-0"
           >
             <X aria-hidden="true" size={18} />
           </Button>
         </header>
-        <div className="min-h-0 flex-1 overflow-y-auto p-5">{children}</div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
+          {children}
+        </div>
       </section>
     </div>
   );

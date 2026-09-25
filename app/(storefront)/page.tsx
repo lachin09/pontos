@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -5,17 +6,44 @@ import {
   ArrowRight,
   ArrowUpRight,
   PackageCheck,
-  RotateCcw,
+  MessageCircle,
   ShieldCheck,
   WalletCards,
 } from "lucide-react";
 import { ProductCard } from "@/components/product/product-card";
+import { ProductPhoto } from "@/components/product/product-photo";
 import { Badge } from "@/components/ui/badge";
+import { buttonClasses } from "@/components/ui/button";
 import { formatPrice } from "@/lib/utils/format";
 import {
   getActiveCategories,
   getPublishedProducts,
 } from "@/lib/data/storefront";
+
+function SectionHeading({
+  eyebrow,
+  title,
+  action,
+}: {
+  eyebrow: string;
+  title: string;
+  action?: ReactNode;
+}) {
+  return (
+    <div className="mb-8 flex items-end justify-between gap-4 sm:mb-10">
+      <div>
+        <p className="eyebrow">{eyebrow}</p>
+        <h2 className="mt-2 text-[1.75rem] leading-tight sm:text-4xl">
+          {title}
+        </h2>
+      </div>
+      {action}
+    </div>
+  );
+}
+
+const sectionLinkClass =
+  "group/link inline-flex min-h-11 shrink-0 items-center gap-2 text-sm font-medium text-accent transition-colors hover:text-accent-hover";
 
 export default async function HomePage() {
   const [products, categories] = await Promise.all([
@@ -38,10 +66,10 @@ export default async function HomePage() {
     <>
       <section className="mx-auto grid max-w-[1600px] overflow-hidden bg-[#e9e7de] md:min-h-[min(720px,calc(100vh-6rem))] md:grid-cols-[0.82fr_1.18fr]">
         <div className="relative z-10 flex flex-col justify-center px-page py-14 sm:py-20 md:py-24 lg:pl-[max(5vw,calc((100vw-1440px)/2))]">
-          <p className="flex items-center gap-3 text-[0.68rem] font-semibold uppercase tracking-[0.22em] text-accent">
+          <p className="eyebrow flex items-center gap-3 text-accent">
             PONTOS <span className="h-px w-8 bg-accent/45" /> Нова колекція
           </p>
-          <h1 className="mt-6 max-w-xl text-[2.65rem] font-normal leading-[1.02] tracking-[-0.045em] text-foreground sm:text-6xl lg:text-[4.5rem]">
+          <h1 className="mt-6 max-w-xl text-[clamp(2.75rem,7vw,4.75rem)] font-normal leading-[1.02] tracking-[-0.045em] text-foreground">
             Щодня —<br />
             <span className="text-accent">у своєму.</span>
           </h1>
@@ -49,19 +77,24 @@ export default async function HomePage() {
             Одяг, який легко обрати зранку й хочеться носити знову. Продумані
             силуети, приємні тканини та кольори, що поєднуються між собою.
           </p>
-          <div className="mt-8 flex flex-wrap items-center gap-4">
+          <div className="mt-8 flex flex-wrap items-center gap-2">
             <Link
               href="/catalog"
-              className="inline-flex min-h-12 items-center gap-3 rounded-[var(--radius-control)] bg-accent px-6 text-sm font-semibold text-accent-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:bg-accent-hover"
+              className={buttonClasses({ size: "lg", className: "group/cta" })}
             >
-              Знайти свою річ <ArrowRight size={16} aria-hidden="true" />
+              Знайти свою річ{" "}
+              <ArrowRight
+                size={16}
+                className="transition-transform group-hover/cta:translate-x-0.5"
+                aria-hidden="true"
+              />
             </Link>
             <Link
               href={featuredProducts.length > 0 ? "#featured" : "/catalog"}
-              className="text-sm font-medium text-foreground hover:text-accent"
+              className={buttonClasses({ variant: "ghost", size: "lg" })}
             >
-              {featuredProducts.length > 0 ? "Рекомендовані" : "До каталогу"}{" "}
-              <ArrowDown className="ml-1 inline" size={14} aria-hidden="true" />
+              {featuredProducts.length > 0 ? "Рекомендовані" : "До каталогу"}
+              <ArrowDown size={14} aria-hidden="true" />
             </Link>
           </div>
           <p className="mt-9 flex items-center gap-2 text-xs text-muted">
@@ -70,14 +103,23 @@ export default async function HomePage() {
           </p>
         </div>
         <div className="relative min-h-[420px] bg-surface-muted sm:min-h-[560px] md:min-h-[620px]">
-          <Image
-            src={heroImage?.url ?? fallbackHeroImage}
-            alt={heroImage ? heroImage.alt || heroProduct?.name || "" : ""}
-            fill
-            priority
-            sizes="(max-width: 768px) 100vw, 65vw"
-            className="object-cover object-center"
-          />
+          {heroImage ? (
+            <ProductPhoto
+              src={heroImage.url}
+              alt={heroImage.alt || heroProduct?.name || ""}
+              preload
+              sizes="(max-width: 768px) 100vw, 65vw"
+            />
+          ) : (
+            <Image
+              src={fallbackHeroImage}
+              alt=""
+              fill
+              preload
+              sizes="(max-width: 768px) 100vw, 65vw"
+              className="object-cover object-center"
+            />
+          )}
           <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-4 bg-gradient-to-t from-black/55 via-black/10 to-transparent p-5 pt-20 text-white sm:p-8 sm:pt-28">
             <div>
               <p className="text-[0.65rem] uppercase tracking-[0.2em] text-white/75">
@@ -99,48 +141,10 @@ export default async function HomePage() {
                   ? `Переглянути ${heroProduct.name}`
                   : "Перейти до каталогу"
               }
-              className="grid size-12 shrink-0 place-items-center rounded-full border border-white/60 bg-white/10 backdrop-blur transition-colors hover:bg-white hover:text-foreground"
+              className="grid size-12 shrink-0 place-items-center rounded-full border border-white/60 bg-white/10 backdrop-blur transition-[background-color,color,transform] hover:scale-105 hover:bg-white hover:text-foreground"
             >
               <ArrowUpRight size={20} aria-hidden="true" />
             </Link>
-          </div>
-        </div>
-      </section>
-
-      <section
-        aria-label="Переваги замовлення"
-        className="border-b border-border bg-surface"
-      >
-        <div className="mx-auto grid max-w-[1440px] grid-cols-1 divide-y divide-border px-page sm:grid-cols-3 sm:divide-x sm:divide-y-0">
-          <div className="flex items-center gap-3 py-4 sm:justify-center sm:py-5">
-            <PackageCheck
-              size={18}
-              className="shrink-0 text-accent"
-              aria-hidden="true"
-            />
-            <span className="text-xs font-medium sm:text-sm">
-              Доставка по Україні
-            </span>
-          </div>
-          <div className="flex items-center gap-3 py-4 sm:justify-center sm:py-5 sm:px-4">
-            <WalletCards
-              size={18}
-              className="shrink-0 text-accent"
-              aria-hidden="true"
-            />
-            <span className="text-xs font-medium sm:text-sm">
-              Оплата при отриманні або переказом
-            </span>
-          </div>
-          <div className="flex items-center gap-3 py-4 sm:justify-center sm:py-5">
-            <ShieldCheck
-              size={18}
-              className="shrink-0 text-accent"
-              aria-hidden="true"
-            />
-            <span className="text-xs font-medium sm:text-sm">
-              Без створення акаунта
-            </span>
           </div>
         </div>
       </section>
@@ -150,22 +154,20 @@ export default async function HomePage() {
         className="scroll-mt-24 border-b border-border bg-surface"
       >
         <div className="mx-auto max-w-[1440px] px-page py-16 sm:py-20">
-          <div className="mb-8 flex items-end justify-between gap-4 sm:mb-10">
-            <div>
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted">
-                Знайдіть своє
-              </p>
-              <h2 className="mt-2 text-2xl font-medium tracking-tight sm:text-3xl">
-                Категорії
-              </h2>
-            </div>
-            <Link
-              href="/catalog"
-              className="hidden items-center gap-2 text-sm font-medium text-accent sm:inline-flex"
-            >
-              Дивитись усе <ArrowUpRight size={16} aria-hidden="true" />
-            </Link>
-          </div>
+          <SectionHeading
+            eyebrow="Знайдіть своє"
+            title="Категорії"
+            action={
+              <Link href="/catalog" className={sectionLinkClass}>
+                Дивитись усе{" "}
+                <ArrowUpRight
+                  size={16}
+                  className="transition-transform group-hover/link:-translate-y-0.5 group-hover/link:translate-x-0.5"
+                  aria-hidden="true"
+                />
+              </Link>
+            }
+          />
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-5">
             {categories.map((category) => (
               <Link
@@ -187,7 +189,7 @@ export default async function HomePage() {
                   {category.name}
                   <ArrowUpRight
                     size={16}
-                    className="shrink-0 opacity-80"
+                    className="shrink-0 opacity-80 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5"
                     aria-hidden="true"
                   />
                 </span>
@@ -200,22 +202,20 @@ export default async function HomePage() {
       {featuredProducts.length > 0 ? (
         <section id="featured" className="scroll-mt-24">
           <div className="mx-auto max-w-[1440px] px-page py-16 sm:py-20">
-            <div className="mb-8 flex items-end justify-between gap-4 sm:mb-10">
-              <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted">
-                  Вибір команди
-                </p>
-                <h2 className="mt-2 text-2xl font-medium tracking-tight sm:text-3xl">
-                  Улюблене
-                </h2>
-              </div>
-              <Link
-                href="#new-in"
-                className="inline-flex items-center gap-2 text-xs font-medium text-accent sm:text-sm"
-              >
-                Дивитись новинки <ArrowRight size={15} aria-hidden="true" />
-              </Link>
-            </div>
+            <SectionHeading
+              eyebrow="Вибір команди"
+              title="Улюблене"
+              action={
+                <Link href="/catalog" className={sectionLinkClass}>
+                  Увесь каталог{" "}
+                  <ArrowRight
+                    size={15}
+                    className="transition-transform group-hover/link:translate-x-0.5"
+                    aria-hidden="true"
+                  />
+                </Link>
+              }
+            />
             <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4">
               {featuredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
@@ -228,32 +228,34 @@ export default async function HomePage() {
       {saleProduct ? (
         <section className="bg-[#e9e7de]">
           <div className="mx-auto grid max-w-[1440px] items-center gap-8 px-page py-14 sm:py-20 md:grid-cols-2 md:gap-16">
-            <div className="relative aspect-[4/3] overflow-hidden rounded-[var(--radius-card)] bg-surface-muted">
+            <Link
+              href={`/product/${saleProduct.slug}`}
+              tabIndex={-1}
+              aria-hidden="true"
+              className="group relative aspect-[4/3] overflow-hidden rounded-[var(--radius-card)] bg-surface-muted"
+            >
               {saleProduct.images[0] ? (
-                <Image
+                <ProductPhoto
                   src={saleProduct.images[0].url}
                   alt={saleProduct.images[0].alt}
-                  fill
                   sizes="(max-width: 768px) 100vw, 50vw"
-                  className="object-cover"
+                  imageClassName="transition-transform duration-700 ease-out group-hover:scale-[1.03] motion-reduce:transition-none"
                 />
               ) : null}
               <Badge variant="sale" className="absolute left-4 top-4">
                 Спеціальна ціна
               </Badge>
-            </div>
+            </Link>
             <div className="py-2 md:py-8">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-accent">
-                Особлива пропозиція
-              </p>
-              <h2 className="mt-3 text-3xl font-medium tracking-tight sm:text-4xl">
+              <p className="eyebrow text-accent">Особлива пропозиція</p>
+              <h2 className="mt-3 text-3xl leading-tight sm:text-5xl">
                 Менше речей. Більше можливостей.
               </h2>
-              <p className="mt-4 max-w-lg text-sm leading-7 text-muted">
+              <p className="mt-4 line-clamp-4 max-w-lg text-sm leading-7 text-muted">
                 {saleProduct.description}
               </p>
               <div className="mt-5 flex items-center gap-3">
-                <span className="text-lg font-medium">
+                <span className="text-xl font-semibold text-highlight tabular-nums">
                   {formatPrice(saleProduct.price)}
                 </span>
                 {saleProduct.oldPrice ? (
@@ -264,7 +266,7 @@ export default async function HomePage() {
               </div>
               <Link
                 href={`/product/${saleProduct.slug}`}
-                className="mt-7 inline-flex min-h-12 items-center gap-3 rounded-[var(--radius-control)] bg-accent px-5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
+                className={buttonClasses({ size: "lg", className: "mt-7" })}
               >
                 Обрати свою річ <ArrowRight size={16} aria-hidden="true" />
               </Link>
@@ -276,17 +278,20 @@ export default async function HomePage() {
       {newProducts.length > 0 ? (
         <section id="new-in" className="scroll-mt-24 bg-surface">
           <div className="mx-auto max-w-[1440px] px-page py-16 sm:py-20">
-            <div className="mb-8 flex items-end justify-between gap-4 sm:mb-10">
-              <div>
-                <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted">
-                  Щойно додали
-                </p>
-                <h2 className="mt-2 text-2xl font-medium tracking-tight sm:text-3xl">
-                  Новинки
-                </h2>
-              </div>
-              <span className="text-xs text-muted">Оновлення колекції</span>
-            </div>
+            <SectionHeading
+              eyebrow="Щойно додали"
+              title="Новинки"
+              action={
+                <Link href="/catalog?sort=newest" className={sectionLinkClass}>
+                  Усі новинки{" "}
+                  <ArrowRight
+                    size={15}
+                    className="transition-transform group-hover/link:translate-x-0.5"
+                    aria-hidden="true"
+                  />
+                </Link>
+              }
+            />
             <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-4">
               {newProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />
@@ -298,9 +303,7 @@ export default async function HomePage() {
 
       {products.length === 0 ? (
         <section className="border-y border-border bg-surface px-page py-14 text-center sm:py-20">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted">
-            Колекція PONTOS
-          </p>
+          <p className="eyebrow">Колекція PONTOS</p>
           <h2 className="mx-auto mt-3 max-w-xl text-3xl sm:text-4xl">
             Готуємо перші речі для вас
           </h2>
@@ -309,7 +312,7 @@ export default async function HomePage() {
           </p>
           <Link
             href="/catalog"
-            className="mt-6 inline-flex min-h-11 items-center gap-2 rounded-[var(--radius-control)] bg-accent px-5 text-sm font-medium text-accent-foreground hover:bg-accent-hover"
+            className={buttonClasses({ className: "mt-6" })}
           >
             Перейти до каталогу <ArrowRight size={15} aria-hidden="true" />
           </Link>
@@ -319,10 +322,8 @@ export default async function HomePage() {
       <section id="about" className="scroll-mt-24">
         <div className="mx-auto grid max-w-[1440px] gap-8 px-page py-16 sm:py-24 md:grid-cols-[0.7fr_1.3fr] md:gap-20">
           <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-accent">
-              Наш підхід
-            </p>
-            <h2 className="mt-3 text-3xl font-medium leading-tight tracking-tight sm:text-4xl">
+            <p className="eyebrow text-accent">Наш підхід</p>
+            <h2 className="mt-3 text-3xl leading-tight sm:text-5xl">
               Менше шуму. Більше улюблених речей.
             </h2>
           </div>
@@ -368,7 +369,7 @@ export default async function HomePage() {
             <div>
               <h2 className="text-sm font-semibold">Зручна доставка</h2>
               <p className="mt-1 text-xs leading-5 text-muted">
-                Нова пошта, Укрпошта або кур’єрська доставка.
+                Нова пошта, Укрпошта або кур’єр. Відправляємо й за кордон.
               </p>
             </div>
           </div>
@@ -385,7 +386,7 @@ export default async function HomePage() {
           </div>
           <div className="flex gap-4">
             <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-surface-muted text-accent">
-              <RotateCcw size={20} aria-hidden="true" />
+              <MessageCircle size={20} aria-hidden="true" />
             </span>
             <div>
               <h2 className="text-sm font-semibold">Потрібна допомога?</h2>
@@ -398,15 +399,13 @@ export default async function HomePage() {
       </section>
 
       <section className="mx-auto max-w-[1440px] px-page py-16 text-center sm:py-24">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.2em] text-muted">
-          PONTOS · everyday essentials
-        </p>
-        <h2 className="mx-auto mt-4 max-w-xl text-3xl font-medium leading-tight tracking-tight sm:text-4xl">
+        <p className="eyebrow">PONTOS · everyday essentials</p>
+        <h2 className="mx-auto mt-4 max-w-2xl text-3xl leading-tight sm:text-5xl">
           Гардероб, у якому легко бути собою.
         </h2>
         <Link
-          href="#categories"
-          className="mt-7 inline-flex items-center gap-2 text-sm font-medium text-accent hover:text-accent-hover"
+          href="/catalog"
+          className={buttonClasses({ size: "lg", className: "mt-8" })}
         >
           Переглянути всю колекцію <ArrowRight size={15} aria-hidden="true" />
         </Link>

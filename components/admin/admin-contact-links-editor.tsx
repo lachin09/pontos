@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { adminSettingsApi } from "@/lib/api/admin";
+import { errorMessage } from "@/lib/api/client";
 import type {
   ContactLinkRecord,
   ContactLinkType,
@@ -76,19 +78,10 @@ export function AdminContactLinksEditor({
     setMessage(null);
     setSaved(false);
     try {
-      const response = await fetch("/api/admin/settings/contact-links", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ links }),
-      });
-      const result: { error?: string } = await response.json();
-      if (!response.ok) {
-        setMessage(result.error ?? "Не вдалося зберегти контакти.");
-        return;
-      }
+      await adminSettingsApi.saveContactLinks({ links });
       setSaved(true);
-    } catch {
-      setMessage("Не вдалося з’єднатися із сервером.");
+    } catch (error) {
+      setMessage(errorMessage(error, "Не вдалося з’єднатися із сервером."));
     } finally {
       setBusy(false);
     }

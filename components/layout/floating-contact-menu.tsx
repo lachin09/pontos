@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Camera,
   Link2,
@@ -29,16 +29,36 @@ const icons = {
 
 export function FloatingContactMenu({ links }: { links: ContactLink[] }) {
   const [isOpen, setIsOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") setIsOpen(false);
+    }
+    function handlePointerDown(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setIsOpen(false);
+    }
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isOpen]);
 
   if (links.length === 0) return null;
 
   return (
-    <div className="fixed bottom-[max(1.25rem,env(safe-area-inset-bottom))] right-4 z-50 flex flex-col items-end gap-3 sm:right-6">
+    <div
+      ref={rootRef}
+      className="floating-contact fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-4 z-50 flex flex-col items-end gap-3 sm:bottom-6 sm:right-6"
+    >
       <section
         id="floating-contact-panel"
         aria-label="Контакти PONTOS"
         hidden={!isOpen}
-        className="w-[min(21rem,calc(100vw-2rem))] origin-bottom-right rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-popover)] sm:p-5"
+        className="w-[min(21rem,calc(100vw-2rem))] origin-bottom-right animate-rise rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-popover)] sm:p-5"
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
@@ -89,14 +109,17 @@ export function FloatingContactMenu({ links }: { links: ContactLink[] }) {
         aria-expanded={isOpen}
         aria-controls="floating-contact-panel"
         onClick={() => setIsOpen((open) => !open)}
-        className="flex min-h-14 items-center gap-2 rounded-full bg-accent px-5 text-sm font-medium text-accent-foreground shadow-[var(--shadow-popover)] transition-transform hover:scale-[1.03] hover:bg-accent-hover focus-visible:outline-offset-4"
+        aria-label={isOpen ? "Закрити контакти" : "Зв’язатися з нами"}
+        className="flex size-14 items-center justify-center gap-2 rounded-full bg-accent text-sm font-medium text-accent-foreground shadow-[var(--shadow-popover)] transition-[transform,background-color] duration-200 hover:scale-[1.03] hover:bg-accent-hover focus-visible:outline-offset-4 active:scale-95 sm:w-auto sm:px-5"
       >
         {isOpen ? (
-          <X size={18} aria-hidden="true" />
+          <X size={20} aria-hidden="true" />
         ) : (
-          <MessageCircle size={18} aria-hidden="true" />
+          <MessageCircle size={20} aria-hidden="true" />
         )}
-        <span>{isOpen ? "Закрити" : "Контакти"}</span>
+        <span className="hidden sm:inline" aria-hidden="true">
+          {isOpen ? "Закрити" : "Контакти"}
+        </span>
       </button>
     </div>
   );

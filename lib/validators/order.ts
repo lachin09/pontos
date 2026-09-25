@@ -13,7 +13,8 @@ export const createOrderSchema = z.object({
     .min(1)
     .max(50)
     .refine(
-      (items) => new Set(items.map((item) => item.variantId)).size === items.length,
+      (items) =>
+        new Set(items.map((item) => item.variantId)).size === items.length,
       "Duplicate variants are not allowed",
     ),
 });

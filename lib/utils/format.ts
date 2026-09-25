@@ -16,17 +16,19 @@ export function formatDate(value: string | Date): string {
   return dateFormatter.format(value instanceof Date ? value : new Date(value));
 }
 
-export function formatItemCount(count: number): string {
+/** Picks the Ukrainian plural form: [1 товар, 2 товари, 5 товарів]. */
+export function pluralize(
+  count: number,
+  [one, few, many]: readonly [string, string, string],
+): string {
   const remainder = count % 100;
   const lastDigit = count % 10;
-  const unit =
-    remainder >= 11 && remainder <= 14
-      ? "товарів"
-      : lastDigit === 1
-        ? "товар"
-        : lastDigit >= 2 && lastDigit <= 4
-          ? "товари"
-          : "товарів";
+  if (remainder >= 11 && remainder <= 14) return many;
+  if (lastDigit === 1) return one;
+  if (lastDigit >= 2 && lastDigit <= 4) return few;
+  return many;
+}
 
-  return `${count} ${unit}`;
+export function formatItemCount(count: number): string {
+  return `${count} ${pluralize(count, ["товар", "товари", "товарів"])}`;
 }

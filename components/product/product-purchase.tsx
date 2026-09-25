@@ -1,113 +1,48 @@
 "use client";
 
-import {
-  ArrowRight,
-  Minus,
-  Plus,
-  ShoppingBag,
-  Truck,
-  WalletCards,
-} from "lucide-react";
+import { ArrowRight, ShoppingBag, Truck, WalletCards } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useMemo, useState } from "react";
-import { Badge } from "@/components/ui/badge";
-import { useProductColor } from "@/components/product/product-color-context";
-import { Button } from "@/components/ui/button";
+import { useCallback, useRef, useState } from "react";
+import { ProductHeading } from "@/components/product/product-heading";
+import { StickyBuyBar } from "@/components/product/sticky-buy-bar";
+import { useVariantSelection } from "@/components/product/use-variant-selection";
+import { VariantOptions } from "@/components/product/variant-options";
+import { Button, buttonClasses } from "@/components/ui/button";
+import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { Toast } from "@/components/ui/toast";
-import { formatPrice } from "@/lib/utils/format";
+import { useIsOffscreen } from "@/lib/hooks/use-is-offscreen";
+import { primaryImageUrl } from "@/lib/product/variants";
 import { useCartStore } from "@/stores/cart.store";
-import type { Product, ProductVariant } from "@/types/product";
-
-function uniqueColors(variants: ProductVariant[]) {
-  return Array.from(
-    new Map(variants.map((variant) => [variant.color, variant])).values(),
-  );
-}
+import type { Product } from "@/types/product";
 
 export function ProductPurchase({ product }: { product: Product }) {
-  const initialVariant =
-    product.variants.find((variant) => variant.isAvailable) ??
-    product.variants[0];
-  const { selectedColor, setSelectedColor } = useProductColor();
-  const [selectedSize, setSelectedSize] = useState(initialVariant?.size ?? "");
-  const [quantity, setQuantity] = useState(1);
-  const [toastOpen, setToastOpen] = useState(false);
+  const selection = useVariantSelection(product);
+  const {
+    selectedColor,
+    selectedSize,
+    selectedVariant,
+    quantity,
+    price,
+    canAddToCart,
+    isLowStock,
+  } = selection;
   const addItem = useCartStore((state) => state.addItem);
+  const [toastOpen, setToastOpen] = useState(false);
   const closeToast = useCallback(() => setToastOpen(false), []);
-
-  const selectedVariant = useMemo(
-    () =>
-      product.variants.find(
-        (variant) =>
-          variant.color.trim().toLowerCase() === selectedColor.trim().toLowerCase() &&
-          variant.size === selectedSize,
-      ),
-    [product.variants, selectedColor, selectedSize],
-  );
-  const colors = uniqueColors(product.variants);
-  const sizes = Array.from(
-    new Set(product.variants.map((variant) => variant.size)),
-  );
-  const canAddToCart = Boolean(
-    selectedVariant?.isAvailable &&
-    selectedVariant.stock > 0 &&
-    quantity <= selectedVariant.stock,
-  );
-  const currentPrice = selectedVariant?.price ?? product.price;
-  const discount = product.oldPrice
-    ? Math.max(0, Math.round((1 - currentPrice / product.oldPrice) * 100))
-    : 0;
-
-  function chooseColor(color: string) {
-    setSelectedColor(color);
-    const hasCurrentSize = product.variants.some(
-      (v) =>
-        v.color.trim().toLowerCase() === color.trim().toLowerCase() &&
-        v.size === selectedSize &&
-        v.isAvailable &&
-        v.stock > 0,
-    );
-    if (!hasCurrentSize) {
-      const firstAvailable =
-        product.variants.find(
-          (v) =>
-            v.color.trim().toLowerCase() === color.trim().toLowerCase() &&
-            v.isAvailable &&
-            v.stock > 0,
-        ) ??
-        product.variants.find(
-          (v) => v.color.trim().toLowerCase() === color.trim().toLowerCase(),
-        );
-      if (firstAvailable) {
-        setSelectedSize(firstAvailable.size);
-      }
-    }
-    setQuantity(1);
-  }
-
-  function chooseSize(size: string) {
-    setSelectedSize(size);
-    setQuantity(1);
-  }
+  const optionsRef = useRef<HTMLDivElement | null>(null);
+  const actionsRef = useRef<HTMLDivElement | null>(null);
+  // The phone buy bar appears whenever the main buttons are off screen.
+  const actionsOffscreen = useIsOffscreen(actionsRef);
 
   function addToCart() {
     if (!selectedVariant || !canAddToCart) return;
-    const normalizedColor = selectedColor.trim().toLowerCase();
     addItem(
       {
         productId: product.id,
         productSlug: product.slug,
         variantId: selectedVariant.id,
         productName: product.name,
-        productImage:
-          product.images.find(
-            (image) =>
-              image.color &&
-              image.color.trim().toLowerCase() === normalizedColor,
-          )?.url ??
-          product.images.find((image) => !image.color || !image.color.trim())?.url ??
-          product.images[0]?.url ??
-          null,
+        productImage: primaryImageUrl(product, selectedColor),
         size: selectedVariant.size,
         color: selectedVariant.color,
         price: selectedVariant.price,
@@ -120,139 +55,47 @@ export function ProductPurchase({ product }: { product: Product }) {
 
   return (
     <div className="grid gap-6">
-      <div>
-        <div className="flex flex-wrap items-center gap-2">
-          {product.isNew ? <Badge variant="accent">Новинка</Badge> : null}
-          {product.isSale && discount > 0 ? (
-            <Badge variant="sale">Знижка −{discount}%</Badge>
-          ) : null}
-        </div>
-        <h1 className="mt-3 text-3xl font-medium leading-tight tracking-tight sm:text-4xl">
-          {product.name}
-        </h1>
-        <div className="mt-4 flex flex-wrap items-baseline gap-3">
-          <span className="text-2xl font-semibold tracking-tight tabular-nums">
-            {formatPrice(currentPrice)}
-          </span>
-          {product.oldPrice ? (
-            <span className="text-sm text-muted line-through">
-              {formatPrice(product.oldPrice)}
-            </span>
-          ) : null}
-          {product.oldPrice && discount > 0 ? (
-            <span className="text-xs font-medium text-accent">
-              Економія {formatPrice(product.oldPrice - currentPrice)}
-            </span>
-          ) : null}
-        </div>
-      </div>
+      <ProductHeading
+        name={product.name}
+        price={price}
+        oldPrice={product.oldPrice}
+        discount={selection.discount}
+        isNew={product.isNew}
+        isSale={product.isSale}
+      />
 
-      <div className="grid gap-5 border-y border-border py-5">
-        <fieldset>
-          <legend className="mb-3 text-sm font-medium">
-            Колір{" "}
-            <span className="font-normal text-muted">
-              — {selectedColor || "не обрано"}
-            </span>
-          </legend>
-          <div className="flex flex-wrap gap-2.5">
-            {colors.map((variant) => (
-              <button
-                key={variant.color}
-                type="button"
-                aria-label={variant.color}
-                aria-pressed={variant.color === selectedColor}
-                title={variant.color}
-                onClick={() => chooseColor(variant.color)}
-                className={`grid size-9 place-items-center rounded-full border p-1 ${variant.color === selectedColor ? "border-accent ring-1 ring-accent ring-offset-2" : "border-border hover:ring-1 hover:ring-muted"}`}
-              >
-                <span
-                  aria-hidden="true"
-                  className="size-full rounded-full border border-black/10"
-                  style={{ backgroundColor: variant.colorHex }}
-                />
-              </button>
-            ))}
-          </div>
-        </fieldset>
-
-        <fieldset>
-          <legend className="mb-3 text-sm font-medium">
-            Розмір{" "}
-            <span className="font-normal text-muted">
-              — {selectedSize || "не обрано"}
-            </span>
-          </legend>
-          <div className="flex flex-wrap gap-2">
-            {sizes.map((size) => {
-              const variant = product.variants.find(
-                (item) =>
-                  item.color.trim().toLowerCase() ===
-                    selectedColor.trim().toLowerCase() && item.size === size,
-              );
-              const unavailable = !variant?.isAvailable || variant.stock < 1;
-
-              return (
-                <button
-                  key={size}
-                  type="button"
-                  aria-pressed={size === selectedSize}
-                  aria-label={`${size}${unavailable ? ", немає в наявності" : ""}`}
-                  onClick={() => chooseSize(size)}
-                  className={`min-w-12 rounded-[var(--radius-control)] border px-3 py-2 text-sm transition-colors ${size === selectedSize ? "border-accent bg-accent text-white" : "border-border bg-surface hover:border-accent"} ${unavailable && size !== selectedSize ? "text-muted line-through" : ""}`}
-                >
-                  {size}
-                </button>
-              );
-            })}
-          </div>
-        </fieldset>
+      <div
+        ref={optionsRef}
+        className="grid scroll-mt-24 gap-5 border-y border-border py-5"
+      >
+        <VariantOptions {...selection} />
       </div>
 
       <p
-        className={`text-sm ${canAddToCart ? "text-success" : "text-muted"}`}
+        className={`flex items-center gap-2 text-sm ${canAddToCart ? (isLowStock ? "text-highlight" : "text-success") : "text-muted"}`}
         aria-live="polite"
       >
+        <span
+          className={`size-2 rounded-full ${canAddToCart ? "bg-current" : "bg-border"}`}
+          aria-hidden="true"
+        />
         {canAddToCart
-          ? `В наявності · ${selectedVariant?.stock} шт.`
+          ? isLowStock
+            ? `Залишилось лише ${selectedVariant?.stock} шт.`
+            : "В наявності, готово до відправки"
           : selectedVariant
             ? "Цей варіант наразі недоступний"
             : "Оберіть доступний варіант"}
       </p>
 
-      <div className="flex flex-wrap gap-3">
-        <div className="inline-flex h-12 items-center rounded-[var(--radius-control)] border border-border bg-surface">
-          <button
-            type="button"
-            aria-label="Зменшити кількість"
-            onClick={() => setQuantity((current) => Math.max(1, current - 1))}
-            disabled={quantity <= 1}
-            className="grid size-11 place-items-center text-foreground hover:text-accent disabled:opacity-40"
-          >
-            <Minus size={15} aria-hidden="true" />
-          </button>
-          <output
-            aria-label="Кількість"
-            className="min-w-7 text-center text-sm tabular-nums"
-          >
-            {quantity}
-          </output>
-          <button
-            type="button"
-            aria-label="Збільшити кількість"
-            onClick={() =>
-              setQuantity((current) =>
-                Math.min(selectedVariant?.stock ?? 1, current + 1),
-              )
-            }
-            disabled={
-              !canAddToCart || quantity >= (selectedVariant?.stock ?? 0)
-            }
-            className="grid size-11 place-items-center text-foreground hover:text-accent disabled:opacity-40"
-          >
-            <Plus size={15} aria-hidden="true" />
-          </button>
-        </div>
+      <div ref={actionsRef} className="flex flex-wrap gap-3">
+        <QuantityStepper
+          value={quantity}
+          onDecrease={selection.decreaseQuantity}
+          onIncrease={selection.increaseQuantity}
+          canDecrease={quantity > 1}
+          canIncrease={canAddToCart && quantity < (selectedVariant?.stock ?? 0)}
+        />
         <Button
           type="button"
           onClick={addToCart}
@@ -283,15 +126,33 @@ export function ProductPurchase({ product }: { product: Product }) {
         </p>
       </div>
 
-      <Link
-        href="/#delivery"
-        className="inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-hover"
-      >
-        Деталі доставки й оплати <ArrowRight size={13} aria-hidden="true" />
-      </Link>
+      <StickyBuyBar
+        visible={actionsOffscreen}
+        title={`${product.name}${selection.hasChosenVariant ? ` · ${selectedColor} · ${selectedSize}` : ""}`}
+        price={price}
+        needsSizeChoice={selection.needsSizeChoice}
+        canAddToCart={canAddToCart}
+        onChooseSize={() =>
+          optionsRef.current?.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          })
+        }
+        onAddToCart={addToCart}
+      />
 
       <Toast open={toastOpen} onClose={closeToast}>
-        {product.name} додано до кошика.
+        <p className="font-medium">Додано до кошика</p>
+        <p className="mt-0.5 text-xs text-foreground/70">
+          {product.name} · {selectedColor} · {selectedSize}
+          {quantity > 1 ? ` · ${quantity} шт.` : ""}
+        </p>
+        <Link
+          href="/cart"
+          className={buttonClasses({ size: "sm", className: "mt-3 w-full" })}
+        >
+          Перейти до кошика <ArrowRight size={14} aria-hidden="true" />
+        </Link>
       </Toast>
     </div>
   );

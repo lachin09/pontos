@@ -16,6 +16,8 @@ export function useDialogBehavior(
         : null;
     const panel = panelRef.current;
     panel?.focus();
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === "Escape") {
@@ -56,6 +58,7 @@ export function useDialogBehavior(
     document.addEventListener("keydown", handleKeyDown);
     return () => {
       document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
       previousFocus?.focus();
     };
   }, [isOpen, onClose, panelRef]);

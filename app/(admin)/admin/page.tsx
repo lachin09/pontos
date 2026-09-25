@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ContactRound, LockKeyhole } from "lucide-react";
+import { ContactRound, FileText, LockKeyhole } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Адміністрування",
@@ -54,6 +54,20 @@ export default function AdminHomePage() {
           </p>
           <span className="mt-5 inline-block text-sm font-medium underline underline-offset-4">
             Налаштувати контакти
+          </span>
+        </Link>
+        <Link
+          href="/admin/settings/store"
+          className="rounded-[var(--radius-card)] border border-border bg-surface p-6 transition-colors hover:border-focus sm:p-8"
+        >
+          <FileText className="text-accent" size={24} aria-hidden="true" />
+          <h2 className="mt-4 text-lg font-medium">Інформація магазину</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Дані продавця, публічна оферта, доставка, повернення та
+            конфіденційність.
+          </p>
+          <span className="mt-5 inline-block text-sm font-medium underline underline-offset-4">
+            Редагувати сторінки
           </span>
         </Link>
       </div>

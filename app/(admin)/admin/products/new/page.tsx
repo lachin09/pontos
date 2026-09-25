@@ -1,19 +1,14 @@
-import { createSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
+import { requireAdminServices } from "@/lib/server/admin-services";
 import {
   AdminProductForm,
   type ProductCategoryOption,
 } from "@/components/admin/admin-product-form";
 
 export default async function NewAdminProductPage() {
-  const supabase = await createSupabaseAuthServerClient();
-  const { data } = await supabase
-    .from("categories")
-    .select("id, name")
-    .eq("is_active", true)
-    .order("sort_order");
-  const categories: ProductCategoryOption[] = (data ?? []).map(
-    ({ id, name }) => ({ id, name }),
-  );
+  const services = await requireAdminServices();
+  const categories: ProductCategoryOption[] = await services.categories
+    .listOptions({ activeOnly: true })
+    .catch(() => []);
 
   return (
     <>

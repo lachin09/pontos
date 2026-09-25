@@ -4,6 +4,8 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { adminAuthApi } from "@/lib/api/admin";
+import { errorMessage } from "@/lib/api/client";
 
 export function AdminLoginForm() {
   const router = useRouter();
@@ -18,25 +20,20 @@ export function AdminLoginForm() {
 
     const formData = new FormData(event.currentTarget);
     try {
-      const response = await fetch("/api/admin/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email: formData.get("email"),
-          password: formData.get("password"),
-        }),
+      await adminAuthApi.login({
+        email: formData.get("email") as string,
+        password: formData.get("password") as string,
       });
-      const result: { error?: string } = await response.json();
-
-      if (!response.ok) {
-        setError(result.error ?? "Не вдалося увійти. Перевірте дані.");
-        return;
-      }
 
       router.replace("/admin");
       router.refresh();
-    } catch {
-      setError("Не вдалося з’єднатися із сервером. Спробуйте ще раз.");
+    } catch (error) {
+      setError(
+        errorMessage(
+          error,
+          "Не вдалося з’єднатися із сервером. Спробуйте ще раз.",
+        ),
+      );
     } finally {
       setPending(false);
     }

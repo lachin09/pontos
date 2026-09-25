@@ -1,21 +1,17 @@
 import Link from "next/link";
-import { createSupabaseAuthServerClient } from "@/lib/supabase/auth-server";
+import { requireAdminServices } from "@/lib/server/admin-services";
 import { AdminProductsTable } from "@/components/admin/admin-products-table";
 
 export default async function AdminProductsPage() {
-  const supabase = await createSupabaseAuthServerClient();
-  const [{ data: products, error }, { data: categories }] = await Promise.all([
-    supabase
-      .from("products")
-      .select(
-        "id, category_id, name, slug, price, is_published, is_available, is_featured, is_new, is_sale, updated_at, product_variants(stock, is_available), product_images(id)",
-      )
-      .order("updated_at", { ascending: false }),
-    supabase.from("categories").select("id, name"),
+  const services = await requireAdminServices();
+  const [products, categories] = await Promise.all([
+    services.products.list().catch(() => null),
+    services.categories.listOptions().catch(() => []),
   ]);
+  const error = products === null;
 
   const categoryNames = Object.fromEntries(
-    (categories ?? []).map((category) => [category.id, category.name]),
+    categories.map((category) => [category.id, category.name]),
   );
 
   return (
@@ -46,22 +42,9 @@ export default async function AdminProductsPage() {
         </p>
       ) : (
         <AdminProductsTable
-          products={(products ?? []).map((product) => ({
-            id: product.id,
-            name: product.name,
-            slug: product.slug,
-            price: product.price,
-            isPublished: product.is_published,
-            isAvailable: product.is_available,
-            isFeatured: product.is_featured,
-            isNew: product.is_new,
-            isSale: product.is_sale,
-            category: categoryNames[product.category_id] ?? "Без категорії",
-            stock: product.product_variants.reduce(
-              (sum, variant) => sum + variant.stock,
-              0,
-            ),
-            imageCount: product.product_images.length,
+          products={(products ?? []).map(({ categoryId, ...product }) => ({
+            ...product,
+            category: categoryNames[categoryId] ?? "Без категорії",
           }))}
         />
       )}

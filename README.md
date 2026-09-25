@@ -21,7 +21,14 @@ The protected admin area is at `/admin`; product, category, and order management
 
 New orders appear in the bell in the admin header. Alerts are stored in Supabase and remain unread until opened; the bell checks for new orders every 20 seconds while an admin page is open. Apply database changes with `npx supabase db push`.
 
-Checkout accepts international destinations and street addresses. Nova Post branch search requires a server-only `NOVA_POSHTA_API_KEY`; without it, customers can still choose address delivery. Add the key to `.env.local` for development and to Vercel Environment Variables for production. Never use a `NEXT_PUBLIC_` prefix for this key.
+Checkout accepts international destinations. Customers type their Nova Post / Ukrposhta branch or street address themselves; there is no branch lookup.
+
+## Architecture
+
+- `app/api/**` route handlers are thin: they parse input with `lib/http/route.ts` (`route`, `adminRoute`, `readJson`) and call a service. Expected failures are thrown as `AppError` (`lib/errors.ts`) and turned into JSON responses in one place.
+- `services/` holds business rules (e.g. image clean-up after deletes). `repositories/*.ts` define the data contracts; `repositories/supabase/` implements them. Storefront readers and admin writers get separate interfaces.
+- `lib/server/storefront-services.ts` and `lib/server/admin-services.ts` are the composition roots — the only places that pick implementations.
+- Browser code never calls `fetch` directly: it uses the typed functions in `lib/api/`.
 
 ## Checks
 

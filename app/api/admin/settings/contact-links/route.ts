@@ -1,64 +1,23 @@
-import { NextResponse } from "next/server";
-import { getActiveAdminSession } from "@/lib/supabase/admin-session";
-import {
-  CONTACT_LINKS_SETTING_KEY,
-  contactLinksSchema,
-} from "@/lib/validators/contact-links";
-import { revalidateStorefront } from "@/lib/data/revalidate";
+import { badRequest } from "@/lib/errors";
 import { CACHE_TAGS } from "@/lib/data/cache-tags";
+import { revalidateStorefront } from "@/lib/data/revalidate";
+import { adminRoute, json, readJson } from "@/lib/http/route";
+import { contactLinksSchema } from "@/lib/validators/contact-links";
 
-export async function PUT(request: Request) {
-  const session = await getActiveAdminSession();
-  if (!session) {
-    return NextResponse.json(
-      { error: "Потрібен доступ адміністратора." },
-      { status: 401 },
-    );
+export const PUT = adminRoute(async (request, { services }) => {
+  const contactLinks = await readJson(request, contactLinksSchema, {
+    message: "Перевірте контактні дані.",
+    exposeIssue: true,
+  });
+  const ids = contactLinks.links.map((link) => link.id);
+  if (new Set(ids).size !== ids.length) {
+    throw badRequest("Контакт повторюється.");
   }
-
-  let body: unknown;
   try {
-    body = await request.json();
+    await services.settings.saveContactLinks(contactLinks);
   } catch {
-    return NextResponse.json(
-      { error: "Перевірте контактні дані." },
-      { status: 400 },
-    );
+    throw badRequest("Не вдалося зберегти контакти.");
   }
-
-  const parsed = contactLinksSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json(
-      { error: parsed.error.issues[0]?.message ?? "Перевірте контактні дані." },
-      { status: 400 },
-    );
-  }
-
-  if (
-    new Set(parsed.data.links.map((link) => link.id)).size !==
-    parsed.data.links.length
-  ) {
-    return NextResponse.json(
-      { error: "Контакт повторюється." },
-      { status: 400 },
-    );
-  }
-
-  const { error } = await session.supabase.from("store_settings").upsert(
-    {
-      key: CONTACT_LINKS_SETTING_KEY,
-      value: parsed.data,
-    },
-    { onConflict: "key" },
-  );
-
-  if (error) {
-    return NextResponse.json(
-      { error: "Не вдалося зберегти контакти." },
-      { status: 400 },
-    );
-  }
-
   revalidateStorefront(CACHE_TAGS.contactLinks);
-  return NextResponse.json({ ok: true });
-}
+  return json({ ok: true });
+});

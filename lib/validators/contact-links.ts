@@ -62,3 +62,4 @@ export const contactLinksSchema = z.object({
 
 export type ContactLinkType = z.infer<typeof contactLinkTypeSchema>;
 export type ContactLinkRecord = z.infer<typeof contactLinkSchema>;
+export type ContactLinksInput = z.infer<typeof contactLinksSchema>;

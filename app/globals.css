@@ -18,6 +18,8 @@
   --radius-control: 0.375rem;
   --radius-card: 0.625rem;
   --shadow-popover: 0 18px 56px rgb(38 37 31 / 18%);
+  --shadow-bar: 0 -8px 32px rgb(38 37 31 / 10%);
+  --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
   --font-display:
     "Iowan Old Style", "Baskerville", "Palatino Linotype", "Book Antiqua",
     Georgia, serif;
@@ -39,6 +41,53 @@
   --color-focus: var(--focus);
   --font-sans: var(--font-geist-sans);
   --spacing-page: clamp(1rem, 5vw, 5rem);
+  --animate-fade-in: fade-in 200ms var(--ease-soft) both;
+  --animate-slide-in-right: slide-in-right 320ms var(--ease-soft) both;
+  --animate-slide-down: slide-down 280ms var(--ease-soft) both;
+  --animate-rise: rise 240ms var(--ease-soft) both;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes slide-in-right {
+  from {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-0.75rem);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.5rem) scale(0.98);
+  }
+}
+
+/* Small uppercase label that introduces a heading. */
+@utility eyebrow {
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Horizontal scroller without a visible scrollbar (chips, thumbnails). */
+@utility scrollbar-none {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 * {
@@ -47,7 +96,7 @@
 
 html {
   min-height: 100%;
-  scroll-behavior: smooth;
+  scroll-padding-top: 5.5rem;
 }
 
 body {
@@ -66,6 +115,11 @@ h2 {
   font-family: var(--font-display);
   font-weight: 400;
   letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+p {
+  text-wrap: pretty;
 }
 
 button,
@@ -93,6 +147,18 @@ button:not(:disabled),
 a,
 button {
   -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* Lift the floating contact button above a page's sticky action bar. */
+.floating-contact {
+  transition: bottom 200ms var(--ease-soft);
+}
+
+@media (width < 64rem) {
+  body:has([data-sticky-bar="visible"]) .floating-contact {
+    bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  }
 }
 
 @media (prefers-reduced-motion: no-preference) {

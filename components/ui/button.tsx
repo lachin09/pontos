@@ -23,6 +23,19 @@ const sizeClasses: Record<ButtonSize, string> = {
   lg: "min-h-12 px-6 text-sm",
 };
 
+/** Button styling for elements that are not <button>, such as links. */
+export function buttonClasses({
+  variant = "primary",
+  size = "md",
+  className = "",
+}: {
+  variant?: ButtonVariant;
+  size?: ButtonSize;
+  className?: string;
+} = {}) {
+  return `inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] border font-medium transition-[background-color,color,border-color,transform] duration-150 active:scale-[0.98] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`;
+}
+
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant;
   size?: ButtonSize;
@@ -35,7 +48,7 @@ export function Button({
   variant = "primary",
   size = "md",
   loading = false,
-  loadingLabel = "Working",
+  loadingLabel = "Зачекайте",
   disabled,
   className = "",
   children,
@@ -43,7 +56,7 @@ export function Button({
 }: ButtonProps) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 rounded-[var(--radius-control)] border font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus disabled:cursor-not-allowed disabled:opacity-50 ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+      className={buttonClasses({ variant, size, className })}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       {...props}

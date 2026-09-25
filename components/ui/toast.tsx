@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 
 export interface ToastProps {
@@ -31,14 +32,23 @@ export function Toast({
 
   if (!open) return null;
 
+  // Top placement keeps the toast clear of the floating contact button.
   return (
-    <div className="pointer-events-none fixed inset-x-4 bottom-4 z-[60] flex justify-center sm:justify-end">
+    <div className="pointer-events-none fixed inset-x-4 top-[max(1rem,env(safe-area-inset-top))] z-[60] flex justify-center sm:inset-x-6 sm:justify-end">
       <div
         role={variant === "error" ? "alert" : "status"}
         aria-live={variant === "error" ? "assertive" : "polite"}
-        className={`pointer-events-auto w-full max-w-sm rounded-[var(--radius-control)] border px-4 py-3 text-sm shadow-[var(--shadow-popover)] ${variantClasses[variant]}`}
+        className={`pointer-events-auto flex w-full max-w-sm animate-slide-down items-start gap-3 rounded-[var(--radius-card)] border py-3 pl-4 pr-2 text-sm shadow-[var(--shadow-popover)] ${variantClasses[variant]}`}
       >
-        {children}
+        <div className="min-w-0 flex-1 py-1">{children}</div>
+        <button
+          type="button"
+          aria-label="Закрити сповіщення"
+          onClick={onClose}
+          className="grid size-8 shrink-0 place-items-center rounded-full opacity-70 transition-opacity hover:opacity-100"
+        >
+          <X size={15} aria-hidden="true" />
+        </button>
       </div>
     </div>
   );
