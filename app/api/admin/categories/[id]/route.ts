@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getActiveAdminSession } from "@/lib/supabase/admin-session";
 import { adminCategorySchema } from "@/lib/validators/admin-category";
+import { revalidateStorefront } from "@/lib/data/revalidate";
+import { CACHE_TAGS } from "@/lib/data/cache-tags";
 
 export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
   const session = await getActiveAdminSession();
@@ -13,6 +15,7 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   const { data, error } = await session.supabase.from("categories").update(parsed.data).eq("id", id).select("id").maybeSingle();
   if (error?.code === "23505") return NextResponse.json({ error: "Категорія з таким посиланням уже існує." }, { status: 409 });
   if (error || !data) return NextResponse.json({ error: "Не вдалося зберегти категорію." }, { status: 400 });
+  revalidateStorefront(CACHE_TAGS.categories);
   return NextResponse.json({ id: data.id });
 }
 
@@ -29,5 +32,6 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
     const { error: storageError } = await session.supabase.storage.from("product-images").remove([category.image_url]);
     if (storageError) console.error("Category image cleanup failed", storageError.name);
   }
+  revalidateStorefront(CACHE_TAGS.categories);
   return NextResponse.json({ ok: true });
 }

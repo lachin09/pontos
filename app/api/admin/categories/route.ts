@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getActiveAdminSession } from "@/lib/supabase/admin-session";
 import { adminCategoryReorderSchema, adminCategorySchema } from "@/lib/validators/admin-category";
+import { revalidateStorefront } from "@/lib/data/revalidate";
+import { CACHE_TAGS } from "@/lib/data/cache-tags";
 
 export async function POST(request: Request) {
   const session = await getActiveAdminSession();
@@ -12,6 +14,7 @@ export async function POST(request: Request) {
   const { data, error } = await session.supabase.from("categories").insert(parsed.data).select("id").single();
   if (error?.code === "23505") return NextResponse.json({ error: "Категорія з таким посиланням уже існує." }, { status: 409 });
   if (error || !data) return NextResponse.json({ error: "Не вдалося створити категорію." }, { status: 400 });
+  revalidateStorefront(CACHE_TAGS.categories);
   return NextResponse.json({ id: data.id }, { status: 201 });
 }
 
@@ -30,5 +33,6 @@ export async function PATCH(request: Request) {
     const { error } = await session.supabase.from("categories").update({ sort_order }).eq("id", id);
     if (error) return NextResponse.json({ error: "Не вдалося змінити порядок." }, { status: 400 });
   }
+  revalidateStorefront(CACHE_TAGS.categories);
   return NextResponse.json({ ok: true });
 }

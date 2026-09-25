@@ -1,5 +1,7 @@
+import { revalidateTag } from "next/cache";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { CACHE_TAGS } from "@/lib/data/cache-tags";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createOrderSchema } from "@/lib/validators/order";
 
@@ -75,6 +77,10 @@ export async function POST(request: Request) {
     }
 
     const order = data[0];
+    if (order.was_created) {
+      // Stock changed; refresh availability in the background.
+      revalidateTag(CACHE_TAGS.products, "max");
+    }
     return NextResponse.json(
       {
         orderNumber: order.order_number,

@@ -12,6 +12,14 @@ export const mockProductRepository: ProductRepository = {
   async getBySlug(slug) {
     return mockProducts.find((product) => product.slug === slug) ?? null;
   },
+  async listRelated(categoryId, excludeId, limit) {
+    return mockProducts
+      .filter(
+        (product) =>
+          product.categoryId === categoryId && product.id !== excludeId,
+      )
+      .slice(0, limit);
+  },
 };
 
 export const mockCategoryRepository: CategoryRepository = {

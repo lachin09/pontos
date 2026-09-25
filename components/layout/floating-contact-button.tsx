@@ -1,10 +1,8 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import {
   FloatingContactMenu,
   type ContactLink,
 } from "@/components/layout/floating-contact-menu";
+import { getContactLinks } from "@/lib/data/storefront";
 import type { ContactLinkRecord } from "@/lib/validators/contact-links";
 
 function normalizedPhone(value: string) {
@@ -91,24 +89,13 @@ function resolveLinks(records: ContactLinkRecord[]): ContactLink[] {
   });
 }
 
-export function FloatingContactButton() {
-  const [links, setLinks] = useState<ContactLink[]>([]);
+export async function FloatingContactButton() {
+  let records: ContactLinkRecord[] = [];
+  try {
+    records = await getContactLinks();
+  } catch {
+    // The contact menu is optional; the storefront still renders without it.
+  }
 
-  useEffect(() => {
-    let active = true;
-    void fetch("/api/contact-links", { cache: "no-store" })
-      .then((response) => (response.ok ? response.json() : null))
-      .then((data: { links?: ContactLinkRecord[] } | null) => {
-        if (active && Array.isArray(data?.links)) {
-          setLinks(resolveLinks(data.links));
-        }
-      })
-      .catch(() => undefined);
-
-    return () => {
-      active = false;
-    };
-  }, []);
-
-  return <FloatingContactMenu links={links} />;
+  return <FloatingContactMenu links={resolveLinks(records)} />;
 }

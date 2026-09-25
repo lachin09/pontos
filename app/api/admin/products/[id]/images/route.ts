@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getActiveAdminSession } from "@/lib/supabase/admin-session";
 import { adminProductImageSchema } from "@/lib/validators/admin-product";
+import { revalidateStorefront } from "@/lib/data/revalidate";
+import { CACHE_TAGS } from "@/lib/data/cache-tags";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const mimeExtensions: Record<string, string> = {
@@ -158,6 +160,7 @@ export async function POST(
     );
   }
 
+  revalidateStorefront(CACHE_TAGS.products);
   return NextResponse.json(
     {
       image: {

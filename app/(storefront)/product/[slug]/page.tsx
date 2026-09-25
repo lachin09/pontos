@@ -6,16 +6,16 @@ import { ProductCard } from "@/components/product/product-card";
 import { ProductPurchase } from "@/components/product/product-purchase";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { ProductColorProvider } from "@/components/product/product-color-context";
-import { createSupabaseProductRepository } from "@/repositories/supabase/product.repository";
-import { createProductService } from "@/services/product.service";
-
-const productService = createProductService(createSupabaseProductRepository());
+import {
+  getPublishedProductBySlug,
+  getRelatedProducts,
+} from "@/lib/data/storefront";
 
 export async function generateMetadata({
   params,
 }: PageProps<"/product/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const product = await productService.getProductBySlug(slug);
+  const product = await getPublishedProductBySlug(slug);
 
   if (!product) return { title: "Товар не знайдено" };
 
@@ -34,17 +34,13 @@ export default async function ProductPage({
   params,
 }: PageProps<"/product/[slug]">) {
   const { slug } = await params;
-  const product = await productService.getProductBySlug(slug);
+  const product = await getPublishedProductBySlug(slug);
   if (!product) notFound();
 
-  const allProducts = await productService.listProducts();
-  const relatedProducts = allProducts
-    .filter(
-      (candidate) =>
-        candidate.categoryId === product.categoryId &&
-        candidate.id !== product.id,
-    )
-    .slice(0, 4);
+  const relatedProducts = await getRelatedProducts(
+    product.categoryId,
+    product.id,
+  );
 
   return (
     <div className="mx-auto max-w-[1440px] px-page pb-16 pt-6 sm:pb-24 sm:pt-10">

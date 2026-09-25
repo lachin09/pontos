@@ -4,24 +4,17 @@ import Link from "next/link";
 import { CatalogFilterForm } from "@/components/catalog/catalog-filter-form";
 import { ProductCard } from "@/components/product/product-card";
 import { PRODUCT_SORTS, type ProductSort } from "@/lib/constants/product";
-import { createCategoryService } from "@/services/category.service";
 import {
-  createProductService,
-  filterAndSortProducts,
-} from "@/services/product.service";
-import { createSupabaseCategoryRepository } from "@/repositories/supabase/category.repository";
-import { createSupabaseProductRepository } from "@/repositories/supabase/product.repository";
+  getActiveCategories,
+  getPublishedProducts,
+} from "@/lib/data/storefront";
+import { filterAndSortProducts } from "@/services/product.service";
 
 export const metadata: Metadata = {
   title: "Каталог одягу",
   description:
     "Перегляньте колекцію повсякденного одягу PONTOS та знайдіть свою річ.",
 };
-
-const productService = createProductService(createSupabaseProductRepository());
-const categoryService = createCategoryService(
-  createSupabaseCategoryRepository(),
-);
 
 type SearchValue = string | string[] | undefined;
 
@@ -52,8 +45,8 @@ export default async function CatalogPage({
   const sort = parseSort(firstValue(query.sort));
 
   const [categories, products] = await Promise.all([
-    categoryService.listActiveCategories(),
-    productService.listProducts(),
+    getActiveCategories(),
+    getPublishedProducts(),
   ]);
   const selectedCategory = categorySlug
     ? categories.find((category) => category.slug === categorySlug)

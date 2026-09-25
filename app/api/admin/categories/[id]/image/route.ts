@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { getActiveAdminSession } from "@/lib/supabase/admin-session";
+import { revalidateStorefront } from "@/lib/data/revalidate";
+import { CACHE_TAGS } from "@/lib/data/cache-tags";
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
 const mimeExtensions: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/avif": "avif" };
@@ -35,6 +37,7 @@ export async function POST(request: Request, context: { params: Promise<{ id: st
     const { error } = await session.supabase.storage.from("product-images").remove([category.image_url]);
     if (error) console.error("Old category image cleanup failed", error.name);
   }
+  revalidateStorefront(CACHE_TAGS.categories);
   return NextResponse.json({ imageUrl: session.supabase.storage.from("product-images").getPublicUrl(path).data.publicUrl });
 }
 
@@ -50,5 +53,6 @@ export async function DELETE(_request: Request, context: { params: Promise<{ id:
     const { error: storageError } = await session.supabase.storage.from("product-images").remove([category.image_url]);
     if (storageError) console.error("Category image cleanup failed", storageError.name);
   }
+  revalidateStorefront(CACHE_TAGS.categories);
   return NextResponse.json({ ok: true });
 }

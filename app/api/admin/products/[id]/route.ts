@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getActiveAdminSession } from "@/lib/supabase/admin-session";
 import { adminProductSchema } from "@/lib/validators/admin-product";
+import { revalidateStorefront } from "@/lib/data/revalidate";
+import { CACHE_TAGS } from "@/lib/data/cache-tags";
 
 export async function PUT(
   request: Request,
@@ -72,6 +74,7 @@ export async function PUT(
     );
   }
 
+  revalidateStorefront(CACHE_TAGS.products);
   return NextResponse.json({ id: data });
 }
 
@@ -128,5 +131,6 @@ export async function DELETE(
       console.error("Product image cleanup failed", storageError.name);
   }
 
+  revalidateStorefront(CACHE_TAGS.products);
   return NextResponse.json({ ok: true });
 }

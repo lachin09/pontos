@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getActiveAdminSession } from "@/lib/supabase/admin-session";
+import { revalidateStorefront } from "@/lib/data/revalidate";
+import { CACHE_TAGS } from "@/lib/data/cache-tags";
 
 const imageUpdateSchema = z.object({
   alt: z.string().trim().max(200),
@@ -58,6 +60,7 @@ export async function PATCH(
       { status: 400 },
     );
   }
+  revalidateStorefront(CACHE_TAGS.products);
   return NextResponse.json({ ok: true });
 }
 
@@ -113,5 +116,6 @@ export async function DELETE(
     if (storageError)
       console.error("Product image cleanup failed", storageError.name);
   }
+  revalidateStorefront(CACHE_TAGS.products);
   return NextResponse.json({ ok: true });
 }

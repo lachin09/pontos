@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { getActiveAdminSession } from "@/lib/supabase/admin-session";
 import { adminProductSchema } from "@/lib/validators/admin-product";
+import { revalidateStorefront } from "@/lib/data/revalidate";
+import { CACHE_TAGS } from "@/lib/data/cache-tags";
 
 export async function POST(request: Request) {
   const session = await getActiveAdminSession();
@@ -56,5 +58,6 @@ export async function POST(request: Request) {
     );
   }
 
+  revalidateStorefront(CACHE_TAGS.products);
   return NextResponse.json({ id: data }, { status: 201 });
 }

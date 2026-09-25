@@ -63,6 +63,8 @@ export function createProductService(repository: ProductRepository) {
   return {
     listProducts: () => repository.list(),
     getProductBySlug: (slug: string) => repository.getBySlug(slug),
+    listRelatedProducts: (categoryId: string, excludeId: string, limit = 4) =>
+      repository.listRelated(categoryId, excludeId, limit),
     filterProducts: async (filters: ProductFilters) =>
       filterAndSortProducts(await repository.list(), filters),
   };

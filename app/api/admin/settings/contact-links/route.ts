@@ -4,6 +4,8 @@ import {
   CONTACT_LINKS_SETTING_KEY,
   contactLinksSchema,
 } from "@/lib/validators/contact-links";
+import { revalidateStorefront } from "@/lib/data/revalidate";
+import { CACHE_TAGS } from "@/lib/data/cache-tags";
 
 export async function PUT(request: Request) {
   const session = await getActiveAdminSession();
@@ -57,5 +59,6 @@ export async function PUT(request: Request) {
     );
   }
 
+  revalidateStorefront(CACHE_TAGS.contactLinks);
   return NextResponse.json({ ok: true });
 }

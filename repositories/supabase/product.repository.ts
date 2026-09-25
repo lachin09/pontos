@@ -95,5 +95,22 @@ export function createSupabaseProductRepository(): ProductRepository {
       }
       return data ? toProduct(data as ProductRow, client) : null;
     },
+    async listRelated(categoryId, excludeId, limit) {
+      const client = createSupabaseServerClient();
+      const { data, error } = await client
+        .from("products")
+        .select(productSelection)
+        .eq("is_published", true)
+        .eq("category_id", categoryId)
+        .neq("id", excludeId)
+        .order("created_at", { ascending: false })
+        .limit(limit);
+
+      if (error) {
+        console.error("Failed to load related products from Supabase:", error.message, error);
+        throw new Error("Не вдалося завантажити товари.");
+      }
+      return (data as ProductRow[]).map((row) => toProduct(row, client));
+    },
   };
 }

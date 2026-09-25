@@ -1,6 +1,5 @@
 import Image from "next/image";
 import Link from "next/link";
-import { connection } from "next/server";
 import {
   ArrowDown,
   ArrowRight,
@@ -13,21 +12,15 @@ import {
 import { ProductCard } from "@/components/product/product-card";
 import { Badge } from "@/components/ui/badge";
 import { formatPrice } from "@/lib/utils/format";
-import { createCategoryService } from "@/services/category.service";
-import { createProductService } from "@/services/product.service";
-import { createSupabaseCategoryRepository } from "@/repositories/supabase/category.repository";
-import { createSupabaseProductRepository } from "@/repositories/supabase/product.repository";
-
-const productService = createProductService(createSupabaseProductRepository());
-const categoryService = createCategoryService(
-  createSupabaseCategoryRepository(),
-);
+import {
+  getActiveCategories,
+  getPublishedProducts,
+} from "@/lib/data/storefront";
 
 export default async function HomePage() {
-  await connection();
   const [products, categories] = await Promise.all([
-    productService.listProducts(),
-    categoryService.listActiveCategories(),
+    getPublishedProducts(),
+    getActiveCategories(),
   ]);
   const featuredProducts = products
     .filter((product) => product.isFeatured)

@@ -37,8 +37,19 @@ export function AdminNotificationBell() {
       }
     };
     void refresh();
-    const timer = window.setInterval(() => void refresh(), 20_000);
-    return () => { active = false; window.clearInterval(timer); };
+    // Skip polling while the tab is hidden and catch up as soon as it returns.
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") void refresh();
+    }, 20_000);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void refresh();
+    };
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, []);
 
   const openOrder = async (notification: AdminNotification) => {
