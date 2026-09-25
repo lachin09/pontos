@@ -294,6 +294,7 @@ export type Database = {
       product_images: {
         Row: {
           alt: string
+          color: string | null
           created_at: string
           id: string
           product_id: string
@@ -302,6 +303,7 @@ export type Database = {
         }
         Insert: {
           alt?: string
+          color?: string | null
           created_at?: string
           id?: string
           product_id: string
@@ -310,6 +312,7 @@ export type Database = {
         }
         Update: {
           alt?: string
+          color?: string | null
           created_at?: string
           id?: string
           product_id?: string

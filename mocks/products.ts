@@ -237,6 +237,7 @@ function createProduct(seed: ProductSeed): Product {
   const images: ProductImage[] = seed.images.map((photoId, index) => ({
     id: `${seed.id}-image-${index + 1}`,
     productId: seed.id,
+    color: seed.colors[index]?.name ?? null,
     url: imageUrl(photoId),
     alt: `${seed.name}, фото ${index + 1}`,
     sortOrder: index + 1,

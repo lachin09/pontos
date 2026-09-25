@@ -36,7 +36,13 @@ export interface ProductImageDraft {
   id: string;
   url: string;
   alt: string;
+  color: string | null;
   sortOrder: number;
+}
+
+interface NewProductImage {
+  file: File;
+  color: string | null;
 }
 
 interface ProductDraft {
@@ -155,7 +161,7 @@ export function AdminProductForm({
     () => initialProduct ?? initialDraft(categories),
   );
   const [images, setImages] = useState(initialImages);
-  const [newFiles, setNewFiles] = useState<File[]>([]);
+  const [newFiles, setNewFiles] = useState<NewProductImage[]>([]);
   const [slugTouched, setSlugTouched] = useState(Boolean(initialProduct));
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -180,12 +186,14 @@ export function AdminProductForm({
     }));
   };
 
-  const uploadImages = async (productId: string, files: File[]) => {
+  const uploadImages = async (productId: string, files: NewProductImage[]) => {
     let allUploaded = true;
-    for (const file of files) {
+    for (const entry of files) {
+      const file = entry.file;
       const body = new FormData();
       body.set("file", file);
       body.set("alt", draft.name);
+      if (entry.color) body.set("color", entry.color);
       try {
         const response = await fetch(
           `/api/admin/products/${productId}/images`,
@@ -202,7 +210,7 @@ export function AdminProductForm({
           break;
         }
         setImages((current) => [...current, result.image!]);
-        setNewFiles((current) => current.filter((entry) => entry !== file));
+        setNewFiles((current) => current.filter((item) => item !== entry));
       } catch {
         setError(`Не вдалося завантажити ${file.name}.`);
         allUploaded = false;
@@ -223,7 +231,11 @@ export function AdminProductForm({
           {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ alt: image.alt, sortOrder: index }),
+            body: JSON.stringify({
+              alt: image.alt,
+              color: image.color,
+              sortOrder: index,
+            }),
           },
         );
         return response.ok;
@@ -328,7 +340,11 @@ export function AdminProductForm({
       return;
     }
     setError(null);
-    setNewFiles((current) => [...current, ...selected]);
+    const defaultColor = draft.variants[0]?.color.trim() || null;
+    setNewFiles((current) => [
+      ...current,
+      ...selected.map((file) => ({ file, color: defaultColor })),
+    ]);
   };
 
   const deleteImage = async (image: ProductImageDraft) => {
@@ -360,6 +376,14 @@ export function AdminProductForm({
     ];
     setImages(reordered.map((image, sortOrder) => ({ ...image, sortOrder })));
   };
+
+  const imageColors = Array.from(
+    new Set(
+      draft.variants
+        .map((variant) => variant.color.trim())
+        .filter(Boolean),
+    ),
+  );
 
   return (
     <form className="mt-8 grid gap-8" onSubmit={submit}>
@@ -671,6 +695,32 @@ export function AdminProductForm({
                   ) : null}
                 </div>
                 <div className="grid min-w-0 content-between gap-2">
+                  <label className="grid gap-1 text-xs text-muted">
+                    Колір фото
+                    <select
+                      value={image.color ?? ""}
+                      onChange={(event) =>
+                        setImages((current) =>
+                          current.map((entry) =>
+                            entry.id === image.id
+                              ? {
+                                  ...entry,
+                                  color: event.target.value || null,
+                                }
+                              : entry,
+                          ),
+                        )
+                      }
+                      className="min-h-9 rounded border border-border bg-surface px-2 text-xs text-foreground outline-none focus:border-focus"
+                    >
+                      <option value="">Усі кольори</option>
+                      {imageColors.map((color) => (
+                        <option key={color} value={color}>
+                          {color}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <input
                     aria-label={`Опис фото ${index + 1}`}
                     value={image.alt}
@@ -718,15 +768,36 @@ export function AdminProductForm({
                 </div>
               </div>
             ))}
-            {newFiles.map((file, index) => (
+            {newFiles.map((entry, index) => (
               <div
-                key={`${file.name}-${file.lastModified}`}
-                className="flex min-h-24 items-center justify-between gap-3 rounded-md border border-dashed border-border p-4 text-sm"
+                key={`${entry.file.name}-${entry.file.lastModified}`}
+                className="grid min-h-24 gap-3 rounded-md border border-dashed border-border p-4 text-sm sm:grid-cols-[1fr_12rem_auto] sm:items-center"
               >
-                <span className="min-w-0 truncate">{file.name}</span>
+                <span className="min-w-0 truncate">{entry.file.name}</span>
+                <select
+                  aria-label={`Колір фото ${entry.file.name}`}
+                  value={entry.color ?? ""}
+                  onChange={(event) =>
+                    setNewFiles((current) =>
+                      current.map((item, itemIndex) =>
+                        itemIndex === index
+                          ? { ...item, color: event.target.value || null }
+                          : item,
+                      ),
+                    )
+                  }
+                  className="min-h-9 rounded border border-border bg-surface px-2 text-xs outline-none focus:border-focus"
+                >
+                  <option value="">Усі кольори</option>
+                  {imageColors.map((color) => (
+                    <option key={color} value={color}>
+                      {color}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
-                  aria-label={`Прибрати ${file.name}`}
+                  aria-label={`Прибрати ${entry.file.name}`}
                   onClick={() =>
                     setNewFiles((current) =>
                       current.filter((_, row) => row !== index),

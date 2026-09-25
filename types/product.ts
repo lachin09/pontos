@@ -1,6 +1,7 @@
 export interface ProductImage {
   id: string;
   productId: string;
+  color: string | null;
   url: string;
   alt: string;
   sortOrder: number;

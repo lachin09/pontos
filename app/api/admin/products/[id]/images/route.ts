@@ -87,6 +87,7 @@ export async function POST(
 
   const parsedImage = adminProductImageSchema.safeParse({
     alt: formData.get("alt") ?? "",
+    color: formData.get("color") || null,
   });
   if (!parsedImage.success) {
     return NextResponse.json(
@@ -139,9 +140,10 @@ export async function POST(
       product_id: productId,
       storage_path: storagePath,
       alt: parsedImage.data.alt ?? "",
+      color: parsedImage.data.color,
       sort_order: (lastImage?.sort_order ?? -1) + 1,
     })
-    .select("id, product_id, storage_path, alt, sort_order, created_at")
+    .select("id, product_id, storage_path, alt, color, sort_order, created_at")
     .single();
 
   if (insertError || !image) {
@@ -165,6 +167,7 @@ export async function POST(
           .from("product-images")
           .getPublicUrl(image.storage_path).data.publicUrl,
         alt: image.alt,
+        color: image.color,
         sortOrder: image.sort_order,
         createdAt: image.created_at,
       },

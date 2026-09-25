@@ -1,7 +1,8 @@
 "use client";
 
 import Image from "next/image";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useProductColor } from "@/components/product/product-color-context";
 import type { ProductImage } from "@/types/product";
 
 export function ProductGallery({
@@ -11,10 +12,32 @@ export function ProductGallery({
   images: ProductImage[];
   productName: string;
 }) {
+  const { selectedColor } = useProductColor();
+  const [selectedColorState, setSelectedColorState] = useState(selectedColor);
   const [activeIndex, setActiveIndex] = useState(0);
-  const activeImage = images[activeIndex];
 
-  if (images.length === 0) {
+  if (selectedColorState !== selectedColor) {
+    setSelectedColorState(selectedColor);
+    setActiveIndex(0);
+  }
+
+  const colorImages = useMemo(() => {
+    if (!selectedColor) return images;
+    const normalized = selectedColor.trim().toLowerCase();
+    const specific = images.filter(
+      (image) => image.color && image.color.trim().toLowerCase() === normalized,
+    );
+    const generic = images.filter((image) => !image.color || !image.color.trim());
+    if (specific.length > 0) {
+      return [...specific, ...generic];
+    }
+    return generic.length > 0 ? generic : images;
+  }, [images, selectedColor]);
+
+  const effectiveIndex = selectedColorState !== selectedColor ? 0 : activeIndex;
+  const activeImage = colorImages[effectiveIndex] ?? colorImages[0];
+
+  if (colorImages.length === 0) {
     return (
       <div className="grid aspect-[4/5] place-items-center rounded-[var(--radius-card)] bg-surface-muted text-sm text-muted">
         Фото товару незабаром з’явиться
@@ -25,7 +48,7 @@ export function ProductGallery({
   return (
     <div className="grid gap-3 sm:grid-cols-[76px_1fr] sm:gap-4">
       <div className="order-2 flex gap-2 overflow-x-auto sm:order-1 sm:flex-col">
-        {images.map((image, index) => (
+        {colorImages.map((image, index) => (
           <button
             key={image.id}
             type="button"
@@ -54,7 +77,7 @@ export function ProductGallery({
           className="object-cover"
         />
         <p className="sr-only" aria-live="polite">
-          Фото {activeIndex + 1} з {images.length}
+          Фото {activeIndex + 1} з {colorImages.length}
         </p>
       </div>
     </div>

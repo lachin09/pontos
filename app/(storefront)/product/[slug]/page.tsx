@@ -3,8 +3,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ArrowRight } from "lucide-react";
 import { ProductCard } from "@/components/product/product-card";
-import { ProductGallery } from "@/components/product/product-gallery";
 import { ProductPurchase } from "@/components/product/product-purchase";
+import { ProductGallery } from "@/components/product/product-gallery";
+import { ProductColorProvider } from "@/components/product/product-color-context";
 import { createSupabaseProductRepository } from "@/repositories/supabase/product.repository";
 import { createProductService } from "@/services/product.service";
 
@@ -54,10 +55,11 @@ export default async function ProductPage({
         <ArrowLeft size={16} aria-hidden="true" /> До каталогу
       </Link>
 
-      <div className="grid items-start gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:gap-14">
-        <ProductGallery images={product.images} productName={product.name} />
-        <div className="lg:sticky lg:top-28">
-          <ProductPurchase product={product} />
+      <ProductColorProvider product={product}>
+        <div className="grid items-start gap-8 lg:grid-cols-[1.08fr_0.92fr] lg:gap-14">
+          <ProductGallery images={product.images} productName={product.name} />
+          <div className="lg:sticky lg:top-28">
+            <ProductPurchase product={product} />
           <div className="mt-8 border-t border-border pt-6">
             <h2 className="text-sm font-semibold">Опис</h2>
             <p className="mt-2 text-sm leading-7 text-muted">
@@ -75,21 +77,22 @@ export default async function ProductPage({
             </dl>
           </div>
 
-          <div className="mt-6 border-t border-border pt-5">
-            <h2 className="text-sm font-semibold">Доставка й оплата</h2>
-            <p className="mt-2 text-sm leading-6 text-muted">
-              Доставка Новою поштою, Укрпоштою або кур’єром. Оплата переказом на
-              рахунок або при отриманні.
-            </p>
-            <Link
-              href="/#delivery"
-              className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-hover"
-            >
-              Детальніше <ArrowRight size={14} aria-hidden="true" />
-            </Link>
+            <div className="mt-6 border-t border-border pt-5">
+              <h2 className="text-sm font-semibold">Доставка й оплата</h2>
+              <p className="mt-2 text-sm leading-6 text-muted">
+                Доставка Новою поштою, Укрпоштою або кур’єром. Оплата переказом на
+                рахунок або при отриманні.
+              </p>
+              <Link
+                href="/#delivery"
+                className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-accent hover:text-accent-hover"
+              >
+                Детальніше <ArrowRight size={14} aria-hidden="true" />
+              </Link>
+            </div>
           </div>
         </div>
-      </div>
+      </ProductColorProvider>
 
       {relatedProducts.length > 0 ? (
         <section className="mt-16 border-t border-border pt-12 sm:mt-24 sm:pt-16">

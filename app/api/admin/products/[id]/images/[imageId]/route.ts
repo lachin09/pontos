@@ -4,6 +4,13 @@ import { getActiveAdminSession } from "@/lib/supabase/admin-session";
 
 const imageUpdateSchema = z.object({
   alt: z.string().trim().max(200),
+  color: z
+    .string()
+    .trim()
+    .max(80)
+    .nullable()
+    .optional()
+    .transform((val) => (val ? val : null)),
   sortOrder: z.number().int().min(0).max(1000),
 });
 
@@ -38,7 +45,11 @@ export async function PATCH(
 
   const { error } = await session.supabase
     .from("product_images")
-    .update({ alt: parsed.data.alt, sort_order: parsed.data.sortOrder })
+    .update({
+      alt: parsed.data.alt,
+      color: parsed.data.color,
+      sort_order: parsed.data.sortOrder,
+    })
     .eq("id", imageId)
     .eq("product_id", productId);
   if (error) {

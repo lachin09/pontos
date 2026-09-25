@@ -11,6 +11,7 @@ import {
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
+import { useProductColor } from "@/components/product/product-color-context";
 import { Button } from "@/components/ui/button";
 import { Toast } from "@/components/ui/toast";
 import { formatPrice } from "@/lib/utils/format";
@@ -27,9 +28,7 @@ export function ProductPurchase({ product }: { product: Product }) {
   const initialVariant =
     product.variants.find((variant) => variant.isAvailable) ??
     product.variants[0];
-  const [selectedColor, setSelectedColor] = useState(
-    initialVariant?.color ?? "",
-  );
+  const { selectedColor, setSelectedColor } = useProductColor();
   const [selectedSize, setSelectedSize] = useState(initialVariant?.size ?? "");
   const [quantity, setQuantity] = useState(1);
   const [toastOpen, setToastOpen] = useState(false);
@@ -40,7 +39,8 @@ export function ProductPurchase({ product }: { product: Product }) {
     () =>
       product.variants.find(
         (variant) =>
-          variant.color === selectedColor && variant.size === selectedSize,
+          variant.color.trim().toLowerCase() === selectedColor.trim().toLowerCase() &&
+          variant.size === selectedSize,
       ),
     [product.variants, selectedColor, selectedSize],
   );
@@ -60,6 +60,28 @@ export function ProductPurchase({ product }: { product: Product }) {
 
   function chooseColor(color: string) {
     setSelectedColor(color);
+    const hasCurrentSize = product.variants.some(
+      (v) =>
+        v.color.trim().toLowerCase() === color.trim().toLowerCase() &&
+        v.size === selectedSize &&
+        v.isAvailable &&
+        v.stock > 0,
+    );
+    if (!hasCurrentSize) {
+      const firstAvailable =
+        product.variants.find(
+          (v) =>
+            v.color.trim().toLowerCase() === color.trim().toLowerCase() &&
+            v.isAvailable &&
+            v.stock > 0,
+        ) ??
+        product.variants.find(
+          (v) => v.color.trim().toLowerCase() === color.trim().toLowerCase(),
+        );
+      if (firstAvailable) {
+        setSelectedSize(firstAvailable.size);
+      }
+    }
     setQuantity(1);
   }
 
@@ -70,13 +92,22 @@ export function ProductPurchase({ product }: { product: Product }) {
 
   function addToCart() {
     if (!selectedVariant || !canAddToCart) return;
+    const normalizedColor = selectedColor.trim().toLowerCase();
     addItem(
       {
         productId: product.id,
         productSlug: product.slug,
         variantId: selectedVariant.id,
         productName: product.name,
-        productImage: product.images[0]?.url ?? null,
+        productImage:
+          product.images.find(
+            (image) =>
+              image.color &&
+              image.color.trim().toLowerCase() === normalizedColor,
+          )?.url ??
+          product.images.find((image) => !image.color || !image.color.trim())?.url ??
+          product.images[0]?.url ??
+          null,
         size: selectedVariant.size,
         color: selectedVariant.color,
         price: selectedVariant.price,
@@ -155,7 +186,9 @@ export function ProductPurchase({ product }: { product: Product }) {
           <div className="flex flex-wrap gap-2">
             {sizes.map((size) => {
               const variant = product.variants.find(
-                (item) => item.color === selectedColor && item.size === size,
+                (item) =>
+                  item.color.trim().toLowerCase() ===
+                    selectedColor.trim().toLowerCase() && item.size === size,
               );
               const unavailable = !variant?.isAvailable || variant.stock < 1;
 

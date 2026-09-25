@@ -74,6 +74,7 @@ export const adminProductSchema = z
 
 export const adminProductImageSchema = z.object({
   alt: z.string().trim().max(200).optional().default(""),
+  color: z.string().trim().max(80).optional().nullable().default(null),
 });
 
 export type AdminProductInput = z.infer<typeof adminProductSchema>;

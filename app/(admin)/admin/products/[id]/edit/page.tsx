@@ -16,7 +16,7 @@ export default async function EditAdminProductPage({
     supabase
       .from("products")
       .select(
-        "id, category_id, name, slug, description, composition, care_instructions, price, old_price, is_published, is_available, is_featured, is_new, is_sale, product_images(id, product_id, storage_path, alt, sort_order, created_at), product_variants(id, product_id, sku, size, color, color_hex, price, stock, is_available, created_at, updated_at)",
+        "id, category_id, name, slug, description, composition, care_instructions, price, old_price, is_published, is_available, is_featured, is_new, is_sale, product_images(id, product_id, storage_path, alt, color, sort_order, created_at), product_variants(id, product_id, sku, size, color, color_hex, price, stock, is_available, created_at, updated_at)",
       )
       .eq("id", id)
       .maybeSingle(),
@@ -37,6 +37,7 @@ export default async function EditAdminProductPage({
         .from("product-images")
         .getPublicUrl(image.storage_path).data.publicUrl,
       alt: image.alt,
+      color: image.color,
       sortOrder: image.sort_order,
     }));
   const variants: ProductVariantDraft[] = productRow.product_variants

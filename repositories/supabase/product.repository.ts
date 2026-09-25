@@ -8,7 +8,7 @@ const productSelection = `
   id, category_id, name, slug, description, composition, care_instructions,
   price, old_price, is_available, is_featured, is_new, is_sale, created_at,
   updated_at,
-  product_images (id, product_id, storage_path, alt, sort_order, created_at),
+  product_images (id, product_id, storage_path, alt, color, sort_order, created_at),
   product_variants (id, product_id, sku, size, color, color_hex, price, stock,
     is_available, created_at, updated_at)
 `;
@@ -34,6 +34,7 @@ function toProduct(row: ProductRow, client: SupabaseClient<Database>): Product {
       .map((image) => ({
         id: image.id,
         productId: image.product_id,
+        color: image.color,
         url: client.storage
           .from("product-images")
           .getPublicUrl(image.storage_path).data.publicUrl,
@@ -74,7 +75,7 @@ export function createSupabaseProductRepository(): ProductRepository {
         .order("created_at", { ascending: false });
 
       if (error) {
-        console.error("Failed to load published products from Supabase", error);
+        console.error("Failed to load published products from Supabase:", error.message, error);
         throw new Error("Не вдалося завантажити товари.");
       }
       return (data as ProductRow[]).map((row) => toProduct(row, client));
@@ -88,7 +89,10 @@ export function createSupabaseProductRepository(): ProductRepository {
         .eq("slug", slug)
         .maybeSingle();
 
-      if (error) throw new Error("Не вдалося завантажити товар.");
+      if (error) {
+        console.error("Failed to load product by slug from Supabase:", error.message, error);
+        throw new Error("Не вдалося завантажити товар.");
+      }
       return data ? toProduct(data as ProductRow, client) : null;
     },
   };
