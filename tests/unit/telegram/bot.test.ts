@@ -65,7 +65,7 @@ describe("createTelegramBot", () => {
     expect(fetchMock).toHaveBeenCalledOnce();
   });
 
-  it("registers the webhook with its secret, for messages only", async () => {
+  it("registers the webhook for messages and button presses", async () => {
     const fetchMock = vi.fn(async () => ok(true));
     const bot = createTelegramBot(
       "TOKEN",
@@ -79,7 +79,96 @@ describe("createTelegramBot", () => {
     expect(JSON.parse(init.body as string)).toMatchObject({
       url: "https://shop.test/api/telegram/webhook",
       secret_token: "s3cret",
-      allowed_updates: ["message"],
+      allowed_updates: ["message", "callback_query"],
+    });
+  });
+
+  it("maps callback buttons to Telegram's format", async () => {
+    const fetchMock = vi.fn(async () => ok({}));
+    const bot = createTelegramBot(
+      "TOKEN",
+      fetchMock as unknown as typeof fetch,
+    );
+    await bot.sendMessage(1, "x", [[{ text: "OK", callbackData: "o:c:1" }]]);
+    const [, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(JSON.parse(init.body as string).reply_markup).toEqual({
+      inline_keyboard: [[{ text: "OK", callback_data: "o:c:1" }]],
+    });
+  });
+
+  it("edits messages, clearing the keyboard when there are no buttons", async () => {
+    const fetchMock = vi.fn(async () => ok({}));
+    const bot = createTelegramBot(
+      "TOKEN",
+      fetchMock as unknown as typeof fetch,
+    );
+    await bot.editMessage(1, 9, "Оновлено");
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toMatch(/\/editMessageText$/);
+    expect(JSON.parse(init.body as string)).toMatchObject({
+      chat_id: 1,
+      message_id: 9,
+      reply_markup: { inline_keyboard: [] },
+    });
+  });
+
+  it("ignores Telegram's 'message is not modified' on repeated edits", async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            ok: false,
+            error_code: 400,
+            description: "Bad Request: message is not modified",
+          }),
+          { status: 400 },
+        ),
+    );
+    const bot = createTelegramBot(
+      "TOKEN",
+      fetchMock as unknown as typeof fetch,
+    );
+    await expect(bot.editMessage(1, 9, "same")).resolves.toBeUndefined();
+  });
+
+  it("answers button presses", async () => {
+    const fetchMock = vi.fn(async () => ok(true));
+    const bot = createTelegramBot(
+      "TOKEN",
+      fetchMock as unknown as typeof fetch,
+    );
+    await bot.answerCallback("cb1", "Готово");
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toMatch(/\/answerCallbackQuery$/);
+    expect(JSON.parse(init.body as string)).toEqual({
+      callback_query_id: "cb1",
+      text: "Готово",
+    });
+  });
+
+  it("reports which updates the webhook receives", async () => {
+    const fetchMock = vi.fn(async () =>
+      ok({
+        url: "https://x",
+        pending_update_count: 0,
+        allowed_updates: ["message"],
+      }),
+    );
+    const bot = createTelegramBot(
+      "TOKEN",
+      fetchMock as unknown as typeof fetch,
+    );
+    await expect(bot.getWebhookInfo()).resolves.toMatchObject({
+      allowedUpdates: ["message"],
     });
   });
 

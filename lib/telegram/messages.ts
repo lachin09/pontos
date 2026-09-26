@@ -2,7 +2,9 @@ import { getCountryName } from "@/lib/constants/countries";
 import type { OrderStatus } from "@/lib/constants/order";
 import {
   DELIVERY_METHOD_LABELS,
+  ORDER_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
+  PAYMENT_STATUS_LABELS,
 } from "@/lib/constants/order-labels";
 import { formatPrice } from "@/lib/utils/format";
 import type { NotifiableOrder } from "@/types/order";
@@ -99,6 +101,16 @@ export function statusChangedMessage(
       ? bankDetailsBlock(bankDetails) + order.orderNumber
       : "";
   return `<b>Замовлення №${order.orderNumber}</b>\n${text}${details}`;
+}
+
+/** The owner's order card: the alert plus a live status line. */
+export function ownerOrderMessage(order: NotifiableOrder, note?: string) {
+  const status = `\n\n<b>Статус:</b> ${ORDER_STATUS_LABELS[order.status]} · ${PAYMENT_STATUS_LABELS[order.paymentStatus]}`;
+  return (
+    ownerNewOrderMessage(order) +
+    status +
+    (note ? `\n<i>${escape(note)}</i>` : "")
+  );
 }
 
 export function ownerNewOrderMessage(order: NotifiableOrder) {

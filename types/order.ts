@@ -44,6 +44,8 @@ export interface OrderStatusChange {
   newStatus: OrderStatus;
   oldPaymentStatus: PaymentStatus;
   newPaymentStatus: PaymentStatus;
+  /** Where the change was made: the admin site or the owner's Telegram. */
+  changedVia: "admin" | "telegram";
   createdAt: string;
 }
 

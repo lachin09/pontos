@@ -286,7 +286,9 @@ export type Database = {
         Row: {
           id: string;
           order_id: string;
-          changed_by: string;
+          changed_by: string | null;
+          changed_via: "admin" | "telegram";
+          telegram_chat_id: number | null;
           old_status: Database["public"]["Enums"]["order_status"];
           new_status: Database["public"]["Enums"]["order_status"];
           old_payment_status: Database["public"]["Enums"]["payment_status"];
@@ -488,6 +490,15 @@ export type Database = {
         }[];
       };
       is_active_admin: { Args: never; Returns: boolean };
+      update_order_status_from_telegram: {
+        Args: {
+          p_order_id: string;
+          p_status: Database["public"]["Enums"]["order_status"];
+          p_payment_status: Database["public"]["Enums"]["payment_status"];
+          p_chat_id: number;
+        };
+        Returns: boolean;
+      };
       update_order_admin: {
         Args: {
           p_order_id: string;

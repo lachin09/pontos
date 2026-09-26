@@ -11,16 +11,24 @@ import type { NotifiableOrder } from "@/types/order";
 import { makeNotifiableOrder } from "../../support/factories";
 
 const TOKEN_HEX = "0b6d3c549f7e4c1a8e392f0c1d7a5b11";
+const ID_HEX = "3f2b1c9e000040008000000000000001";
 const CODE = "a".repeat(32);
+
+type Sent = { chatId: number; text: string; buttons?: InlineButton[][] };
 
 function setup({
   order = makeNotifiableOrder(),
   telegram = EMPTY_TELEGRAM_SETTINGS as TelegramSettings,
   bankDetails = "IBAN: UA12",
   phone = "+380971234567",
+  failStatusUpdate = false,
+  failSendTo = [] as number[],
 } = {}) {
   const orders = new Map<string, NotifiableOrder>([[order.id, { ...order }]]);
-  const sent: { chatId: number; text: string; buttons?: InlineButton[][] }[] =
+  const sent: Sent[] = [];
+  const edits: (Sent & { messageId: number })[] = [];
+  const answers: { id: string; text?: string }[] = [];
+  const statusCalls: { orderId: string; statuses: unknown; chatId: number }[] =
     [];
   let telegramSettings = { ...telegram };
 
@@ -33,10 +41,25 @@ function setup({
     async setTelegramChat(id, chatId) {
       orders.get(id)!.telegramChatId = chatId;
     },
+    async updateStatusFromTelegram(orderId, statuses, chatId) {
+      if (failStatusUpdate) throw new Error("permission denied");
+      statusCalls.push({ orderId, statuses, chatId });
+      const current = orders.get(orderId);
+      if (!current) return false;
+      Object.assign(current, statuses);
+      return true;
+    },
   };
   const bot: TelegramBot = {
     async sendMessage(chatId, text, buttons) {
+      if (failSendTo.includes(chatId)) throw new Error("bot was blocked");
       sent.push({ chatId, text, buttons });
+    },
+    async editMessage(chatId, messageId, text, buttons) {
+      edits.push({ chatId, messageId, text, buttons });
+    },
+    async answerCallback(id, text) {
+      answers.push({ id, text });
     },
     getUsername: async () => "pontos_bot",
     setWebhook: vi.fn(),
@@ -61,12 +84,26 @@ function setup({
   return {
     notifier,
     sent,
+    edits,
+    answers,
+    statusCalls,
     order: () => orders.get(order.id)!,
     settings: () => telegramSettings,
     message: (text: string, chatId = 555) =>
       notifier.handleUpdate({ message: { chat: { id: chatId }, text } }),
+    press: (data: string, chatId = 777) =>
+      notifier.handleUpdate({
+        callback_query: {
+          id: "cb1",
+          data,
+          message: { message_id: 9, chat: { id: chatId } },
+        },
+      }),
   };
 }
+
+const buttonTexts = (buttons?: InlineButton[][]) =>
+  (buttons ?? []).map((row) => row.map((button) => button.text));
 
 describe("order notifier", () => {
   describe("customer subscription", () => {
@@ -147,15 +184,20 @@ describe("order notifier", () => {
     });
   });
 
-  describe("new order alerts", () => {
-    it("sends every owner chat the order with an admin link", async () => {
+  describe("new order cards", () => {
+    it("sends every owner chat the order with status buttons and an admin link", async () => {
       const { notifier, sent } = setup({
         telegram: { ownerChatIds: [1, 2], connectCode: null },
       });
       await notifier.notifyNewOrder(1042);
       expect(sent.map((m) => m.chatId)).toEqual([1, 2]);
       expect(sent[0].text).toContain("Нове замовлення №1042");
+      expect(sent[0].text).toContain("Статус:</b> Нове");
       expect(sent[0].buttons).toEqual([
+        [
+          { text: "✅ Підтвердити", callbackData: `o:c:${ID_HEX}` },
+          { text: "❌ Скасувати", callbackData: `o:x:${ID_HEX}` },
+        ],
         [
           {
             text: "Відкрити в адмінці",
@@ -166,22 +208,13 @@ describe("order notifier", () => {
     });
 
     it("keeps going when one chat fails", async () => {
-      const setupResult = setup({
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const { notifier, sent } = setup({
         telegram: { ownerChatIds: [1, 2], connectCode: null },
+        failSendTo: [1],
       });
-      const log = vi.spyOn(console, "error").mockImplementation(() => {});
-      const original = setupResult.sent.push.bind(setupResult.sent);
-      let first = true;
-      setupResult.sent.push = (...items) => {
-        if (first) {
-          first = false;
-          throw new Error("blocked");
-        }
-        return original(...items);
-      };
-      await setupResult.notifier.notifyNewOrder(1042);
-      expect(setupResult.sent.map((m) => m.chatId)).toEqual([2]);
-      expect(log).toHaveBeenCalled();
+      await notifier.notifyNewOrder(1042);
+      expect(sent.map((m) => m.chatId)).toEqual([2]);
     });
 
     it("does nothing without connected owners", async () => {
@@ -191,7 +224,118 @@ describe("order notifier", () => {
     });
   });
 
-  describe("status updates", () => {
+  describe("owner status buttons", () => {
+    const owner = { telegram: { ownerChatIds: [777], connectCode: null } };
+
+    it("confirms an order, redraws the card, and tells the customer", async () => {
+      const t = setup({
+        ...owner,
+        order: makeNotifiableOrder({ telegramChatId: 555 }),
+      });
+      await t.press(`o:c:${ID_HEX}`);
+
+      expect(t.statusCalls).toEqual([
+        {
+          orderId: t.order().id,
+          statuses: { status: "confirmed", paymentStatus: "pending" },
+          chatId: 777,
+        },
+      ]);
+      expect(t.edits[0]).toMatchObject({ chatId: 777, messageId: 9 });
+      expect(t.edits[0].text).toContain("Статус:</b> Підтверджене");
+      expect(t.edits[0].text).toContain("Змінено в Telegram");
+      // Transfer order, not paid yet → the next step is "payment received".
+      expect(buttonTexts(t.edits[0].buttons)[0]).toEqual([
+        "💰 Оплату отримано",
+        "❌ Скасувати",
+      ]);
+      expect(t.answers).toEqual([{ id: "cb1", text: "Готово: Підтверджене" }]);
+      expect(t.sent).toHaveLength(1);
+      expect(t.sent[0]).toMatchObject({ chatId: 555 });
+      expect(t.sent[0].text).toContain("IBAN: UA12");
+    });
+
+    it("marks a transfer as paid", async () => {
+      const t = setup({
+        ...owner,
+        order: makeNotifiableOrder({ status: "confirmed" }),
+      });
+      await t.press(`o:p:${ID_HEX}`);
+      expect(t.order()).toMatchObject({
+        status: "paid",
+        paymentStatus: "paid",
+      });
+      expect(buttonTexts(t.edits[0].buttons)[0]).toEqual([
+        "📦 Відправлено",
+        "❌ Скасувати",
+      ]);
+    });
+
+    it("asks before cancelling, and can go back", async () => {
+      const t = setup(owner);
+      await t.press(`o:x:${ID_HEX}`);
+      expect(t.statusCalls).toEqual([]);
+      expect(t.edits[0].text).toContain("Скасувати це замовлення?");
+      expect(t.edits[0].buttons).toEqual([
+        [
+          { text: "Так, скасувати", callbackData: `o:X:${ID_HEX}` },
+          { text: "↩︎ Назад", callbackData: `o:b:${ID_HEX}` },
+        ],
+      ]);
+
+      await t.press(`o:b:${ID_HEX}`);
+      expect(buttonTexts(t.edits[1].buttons)[0]).toEqual([
+        "✅ Підтвердити",
+        "❌ Скасувати",
+      ]);
+
+      await t.press(`o:X:${ID_HEX}`);
+      expect(t.order().status).toBe("cancelled");
+      expect(buttonTexts(t.edits[2].buttons)).toEqual([["Відкрити в адмінці"]]);
+    });
+
+    it("refuses presses from chats that are not owner chats", async () => {
+      const t = setup(owner);
+      await t.press(`o:c:${ID_HEX}`, 12345);
+      expect(t.statusCalls).toEqual([]);
+      expect(t.edits).toEqual([]);
+      expect(t.answers).toEqual([{ id: "cb1", text: "Немає доступу" }]);
+    });
+
+    it("handles stale buttons by redrawing the current state", async () => {
+      const t = setup({
+        ...owner,
+        order: makeNotifiableOrder({ status: "shipped" }),
+      });
+      await t.press(`o:c:${ID_HEX}`);
+      expect(t.statusCalls).toEqual([]);
+      expect(t.answers[0].text).toBe("Статус уже змінено: Відправлене");
+      expect(buttonTexts(t.edits[0].buttons)[0]).toEqual(["🏁 Доставлено"]);
+    });
+
+    it("answers unknown orders and malformed data without changing anything", async () => {
+      const t = setup(owner);
+      await t.press(`o:c:${"f".repeat(32)}`);
+      await t.press("hello");
+      expect(t.statusCalls).toEqual([]);
+      expect(t.answers.map((a) => a.text)).toEqual([
+        "Замовлення не знайдено",
+        "Замовлення не знайдено",
+      ]);
+    });
+
+    it("reports a failed update instead of crashing the webhook", async () => {
+      vi.spyOn(console, "error").mockImplementation(() => {});
+      const t = setup({ ...owner, failStatusUpdate: true });
+      await t.press(`o:c:${ID_HEX}`);
+      expect(t.answers).toEqual([
+        { id: "cb1", text: "Не вдалося змінити статус. Спробуйте в адмінці." },
+      ]);
+      expect(t.order().status).toBe("new");
+    });
+  });
+
+  describe("customer status updates", () => {
     it("tells a subscribed customer about a confirmation, with bank details", async () => {
       const { notifier, sent } = setup({
         order: makeNotifiableOrder({
@@ -201,10 +345,7 @@ describe("order notifier", () => {
       });
       await notifier.notifyStatusChange(
         "3f2b1c9e-0000-4000-8000-000000000001",
-        {
-          status: "new",
-          paymentStatus: "pending",
-        },
+        { status: "new", paymentStatus: "pending" },
       );
       expect(sent).toHaveLength(1);
       expect(sent[0].text).toContain("підтверджено");

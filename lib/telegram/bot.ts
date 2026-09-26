@@ -1,9 +1,12 @@
 import { createHash, timingSafeEqual } from "node:crypto";
 
-export type InlineButton = { text: string; url: string };
+/** A link button, or a button that sends `callbackData` back to the bot. */
+export type InlineButton =
+  { text: string; url: string } | { text: string; callbackData: string };
 
 export type WebhookInfo = {
   url: string;
+  allowedUpdates: string[];
   pendingUpdateCount: number;
   lastErrorMessage: string | null;
 };
@@ -16,6 +19,15 @@ export interface TelegramBot {
     html: string,
     buttons?: InlineButton[][],
   ): Promise<void>;
+  /** Replaces the text and buttons of a message the bot sent earlier. */
+  editMessage(
+    chatId: number,
+    messageId: number,
+    html: string,
+    buttons?: InlineButton[][],
+  ): Promise<void>;
+  /** Shows a short notice to whoever pressed a button (required by Telegram). */
+  answerCallback(callbackId: string, text?: string): Promise<void>;
   /** The bot's @username without the @, used to build t.me links. */
   getUsername(): Promise<string>;
   setWebhook(url: string, secret: string): Promise<void>;
@@ -48,6 +60,24 @@ export function isValidWebhookSecret(token: string, received: string | null) {
   const expected = Buffer.from(webhookSecretFor(token));
   const actual = Buffer.from(received);
   return expected.length === actual.length && timingSafeEqual(expected, actual);
+}
+
+/** Updates the bot asks Telegram to deliver to the webhook. */
+export const WEBHOOK_UPDATES = ["message", "callback_query"];
+
+function keyboard(buttons?: InlineButton[][]) {
+  if (!buttons?.length) return {};
+  return {
+    reply_markup: {
+      inline_keyboard: buttons.map((row) =>
+        row.map((button) =>
+          "url" in button
+            ? { text: button.text, url: button.url }
+            : { text: button.text, callback_data: button.callbackData },
+        ),
+      ),
+    },
+  };
 }
 
 export function createTelegramBot(
@@ -88,9 +118,37 @@ export function createTelegramBot(
         text: html,
         parse_mode: "HTML",
         link_preview_options: { is_disabled: true },
-        ...(buttons?.length
-          ? { reply_markup: { inline_keyboard: buttons } }
-          : {}),
+        ...keyboard(buttons),
+      });
+    },
+    async editMessage(chatId, messageId, html, buttons) {
+      try {
+        await call("editMessageText", {
+          chat_id: chatId,
+          message_id: messageId,
+          text: html,
+          parse_mode: "HTML",
+          link_preview_options: { is_disabled: true },
+          // An empty keyboard removes the buttons.
+          reply_markup: keyboard(buttons).reply_markup ?? {
+            inline_keyboard: [],
+          },
+        });
+      } catch (error) {
+        // Pressing a button twice re-renders the same message; that's fine.
+        if (
+          error instanceof TelegramError &&
+          error.message.includes("message is not modified")
+        ) {
+          return;
+        }
+        throw error;
+      }
+    },
+    async answerCallback(callbackId, text) {
+      await call("answerCallbackQuery", {
+        callback_query_id: callbackId,
+        ...(text ? { text } : {}),
       });
     },
     async getUsername() {
@@ -101,18 +159,21 @@ export function createTelegramBot(
       await call("setWebhook", {
         url,
         secret_token: secret,
-        allowed_updates: ["message"],
+        allowed_updates: WEBHOOK_UPDATES,
         drop_pending_updates: true,
       });
     },
     async getWebhookInfo() {
       const info = await call<{
         url: string;
+        allowed_updates?: string[];
         pending_update_count: number;
         last_error_message?: string;
       }>("getWebhookInfo");
       return {
         url: info.url,
+        // Telegram omits the list when every update type is allowed.
+        allowedUpdates: info.allowed_updates ?? WEBHOOK_UPDATES,
         pendingUpdateCount: info.pending_update_count,
         lastErrorMessage: info.last_error_message ?? null,
       };

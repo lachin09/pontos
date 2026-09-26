@@ -56,6 +56,7 @@ export interface AdminOrderDetailsData {
     newStatus: OrderStatus;
     oldPaymentStatus: PaymentStatus;
     newPaymentStatus: PaymentStatus;
+    changedVia: "admin" | "telegram";
     createdAt: string;
   }[];
 }
@@ -217,6 +218,7 @@ export function AdminOrderDetails({ order }: { order: AdminOrderDetailsData }) {
                     Оплата: {PAYMENT_STATUS_LABELS[entry.oldPaymentStatus]} →{" "}
                     {PAYMENT_STATUS_LABELS[entry.newPaymentStatus]} ·{" "}
                     {date(entry.createdAt)}
+                    {entry.changedVia === "telegram" ? " · через Telegram" : ""}
                   </p>
                 </li>
               ))}

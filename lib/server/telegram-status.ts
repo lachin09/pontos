@@ -1,5 +1,5 @@
 import { siteUrl } from "@/lib/server/storefront-services";
-import { getTelegramBot } from "@/lib/telegram/bot";
+import { getTelegramBot, WEBHOOK_UPDATES } from "@/lib/telegram/bot";
 import type { TelegramStatus } from "@/lib/validators/telegram";
 import type { SettingsService } from "@/services/settings.service";
 
@@ -31,7 +31,10 @@ export async function getTelegramStatus(
       telegram.bot.getWebhookInfo(),
     ]);
     status.username = username;
-    status.webhookConnected = info.url === webhookUrl;
+    // Older connections only receive messages, not button presses.
+    status.webhookConnected =
+      info.url === webhookUrl &&
+      WEBHOOK_UPDATES.every((type) => info.allowedUpdates.includes(type));
     status.webhookError = info.lastErrorMessage;
   } catch (error) {
     status.webhookError =

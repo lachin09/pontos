@@ -114,7 +114,7 @@ export function createSupabaseOrderAdminRepository(
         client
           .from("order_status_history")
           .select(
-            "id, old_status, new_status, old_payment_status, new_payment_status, created_at",
+            "id, old_status, new_status, old_payment_status, new_payment_status, changed_via, created_at",
           )
           .eq("order_id", id)
           .order("created_at", { ascending: false }),
@@ -157,6 +157,7 @@ export function createSupabaseOrderAdminRepository(
           newStatus: entry.new_status,
           oldPaymentStatus: entry.old_payment_status,
           newPaymentStatus: entry.new_payment_status,
+          changedVia: entry.changed_via,
           createdAt: entry.created_at,
         })),
       };
@@ -227,6 +228,19 @@ export function createSupabaseOrderNotificationRepository(
     findByNumber: (orderNumber) => findOne("order_number", orderNumber),
     findByToken: (token) =>
       UUID.test(token) ? findOne("public_token", token) : Promise.resolve(null),
+    async updateStatusFromTelegram(orderId, { status, paymentStatus }, chatId) {
+      const { data, error } = await client.rpc(
+        "update_order_status_from_telegram",
+        {
+          p_order_id: orderId,
+          p_status: status,
+          p_payment_status: paymentStatus,
+          p_chat_id: chatId,
+        },
+      );
+      if (error) throw error;
+      return Boolean(data);
+    },
     async setTelegramChat(orderId, chatId) {
       const { error } = await client
         .from("orders")

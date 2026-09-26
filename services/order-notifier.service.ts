@@ -1,6 +1,7 @@
 import { randomBytes } from "node:crypto";
 import type { OrderStatus, PaymentStatus } from "@/lib/constants/order";
-import type { TelegramBot } from "@/lib/telegram/bot";
+import { ORDER_STATUS_LABELS } from "@/lib/constants/order-labels";
+import type { InlineButton, TelegramBot } from "@/lib/telegram/bot";
 import {
   customerLinkedMessage,
   helpMessage,
@@ -8,10 +9,17 @@ import {
   ORDER_LINK_TAKEN,
   OWNER_CONNECTED,
   OWNER_LINK_INVALID,
-  ownerNewOrderMessage,
+  ownerOrderMessage,
   statusChangedMessage,
   WELCOME_MESSAGE,
 } from "@/lib/telegram/messages";
+import {
+  availableActions,
+  callbackData,
+  ORDER_ACTIONS,
+  parseOwnerCallback,
+  type OrderAction,
+} from "@/lib/telegram/order-actions";
 import {
   ORDER_START_PREFIX,
   OWNER_START_PREFIX,
@@ -19,10 +27,12 @@ import {
 } from "@/lib/validators/telegram";
 import type { OrderNotificationRepository } from "@/repositories/order.repository";
 import type { SettingsService } from "@/services/settings.service";
+import type { NotifiableOrder } from "@/types/order";
 
 const MAX_OWNER_CHATS = 20;
 
 type Statuses = { status: OrderStatus; paymentStatus: PaymentStatus };
+type ButtonPress = NonNullable<TelegramUpdate["callback_query"]>;
 
 /** "0b6d3c54…" (32 hex) ⇄ "0b6d3c54-…" (UUID). Telegram start params can't hold dashes. */
 const compactToken = (uuid: string) => uuid.replace(/-/g, "");
@@ -35,7 +45,8 @@ export type OrderNotifier = ReturnType<typeof createOrderNotifier>;
 
 /**
  * Order notifications over Telegram: the customer's confirmation and status
- * updates, bank details for transfers, and new-order alerts for the owner.
+ * updates, bank details for transfers, and new-order cards with status
+ * buttons for the owner.
  */
 export function createOrderNotifier(deps: {
   orders: OrderNotificationRepository;
@@ -44,7 +55,7 @@ export function createOrderNotifier(deps: {
     "getStoreInfo" | "getTelegramSettings" | "saveTelegramSettings"
   >;
   bot: TelegramBot;
-  /** e.g. "https://pontos-xi.vercel.app"; adds an admin link to alerts. */
+  /** e.g. "https://pontos-xi.vercel.app"; adds an admin link to owner cards. */
   siteUrl?: string | null;
   newCode?: () => string;
 }) {
@@ -55,6 +66,8 @@ export function createOrderNotifier(deps: {
     `https://t.me/${await bot.getUsername()}?start=${payload}`;
 
   const seller = async () => (await settings.getStoreInfo()).seller;
+
+  // ── Customer ────────────────────────────────────────────────────────────
 
   async function linkOrder(chatId: number, hexToken: string) {
     const token = expandToken(hexToken);
@@ -69,6 +82,22 @@ export function createOrderNotifier(deps: {
     const { bankDetails } = await seller();
     await bot.sendMessage(chatId, customerLinkedMessage(order, bankDetails));
   }
+
+  /** Tells a subscribed customer what changed. `previous` is before the update. */
+  async function notifyStatusChange(orderId: string, previous: Statuses) {
+    const order = await orders.findById(orderId);
+    if (!order?.telegramChatId) return;
+    const changed = {
+      status: order.status !== previous.status,
+      paymentStatus: order.paymentStatus !== previous.paymentStatus,
+    };
+    if (!changed.status && !changed.paymentStatus) return;
+    const { bankDetails } = await seller();
+    const text = statusChangedMessage(order, changed, bankDetails);
+    if (text) await bot.sendMessage(order.telegramChatId, text);
+  }
+
+  // ── Owner ───────────────────────────────────────────────────────────────
 
   async function connectOwner(chatId: number, code: string) {
     const current = await settings.getTelegramSettings();
@@ -85,6 +114,132 @@ export function createOrderNotifier(deps: {
     await bot.sendMessage(chatId, OWNER_CONNECTED);
   }
 
+  /** Status buttons two per row, then a link to the order in the admin. */
+  function ownerButtons(order: NotifiableOrder): InlineButton[][] {
+    const actions = availableActions(order).map((action) => ({
+      text: ORDER_ACTIONS[action].label,
+      callbackData: callbackData.action(action, order.id),
+    }));
+    const rows: InlineButton[][] = [];
+    for (let i = 0; i < actions.length; i += 2) {
+      rows.push(actions.slice(i, i + 2));
+    }
+    if (siteUrl) {
+      rows.push([
+        {
+          text: "Відкрити в адмінці",
+          url: `${siteUrl}/admin/orders/${order.id}`,
+        },
+      ]);
+    }
+    return rows;
+  }
+
+  const redraw = (
+    chatId: number,
+    messageId: number,
+    order: NotifiableOrder,
+    note?: string,
+  ) =>
+    bot.editMessage(
+      chatId,
+      messageId,
+      ownerOrderMessage(order, note),
+      ownerButtons(order),
+    );
+
+  async function applyOwnerAction(
+    press: { id: string; chatId: number; messageId: number },
+    order: NotifiableOrder,
+    action: OrderAction,
+  ) {
+    if (!availableActions(order).includes(action)) {
+      // Stale button: the status changed since this card was drawn.
+      await redraw(press.chatId, press.messageId, order);
+      return bot.answerCallback(
+        press.id,
+        `Статус уже змінено: ${ORDER_STATUS_LABELS[order.status]}`,
+      );
+    }
+    const previous = {
+      status: order.status,
+      paymentStatus: order.paymentStatus,
+    };
+    const updated = await orders.updateStatusFromTelegram(
+      order.id,
+      ORDER_ACTIONS[action].apply(order),
+      press.chatId,
+    );
+    const current = updated ? await orders.findById(order.id) : null;
+    if (!current) return bot.answerCallback(press.id, "Замовлення не знайдено");
+
+    await redraw(press.chatId, press.messageId, current, "Змінено в Telegram");
+    await bot.answerCallback(
+      press.id,
+      `Готово: ${ORDER_STATUS_LABELS[current.status]}`,
+    );
+    // The customer hears about it exactly as if it changed on the site.
+    await notifyStatusChange(order.id, previous);
+  }
+
+  async function handleOwnerPress(callback: ButtonPress) {
+    const chatId = callback.message?.chat.id;
+    const messageId = callback.message?.message_id;
+    if (chatId === undefined || messageId === undefined) {
+      return bot.answerCallback(callback.id);
+    }
+    const { ownerChatIds } = await settings.getTelegramSettings();
+    if (!ownerChatIds.includes(chatId)) {
+      return bot.answerCallback(callback.id, "Немає доступу");
+    }
+    const parsed = parseOwnerCallback(callback.data ?? "");
+    const order = parsed ? await orders.findById(parsed.orderId) : null;
+    if (!parsed || !order) {
+      return bot.answerCallback(callback.id, "Замовлення не знайдено");
+    }
+
+    try {
+      if (parsed.kind === "back") {
+        await redraw(chatId, messageId, order);
+        return bot.answerCallback(callback.id);
+      }
+      if (parsed.kind === "action" && parsed.action === "cancel") {
+        // Cancelling asks for a second tap.
+        await bot.editMessage(
+          chatId,
+          messageId,
+          ownerOrderMessage(order, "Скасувати це замовлення?"),
+          [
+            [
+              {
+                text: "Так, скасувати",
+                callbackData: callbackData.confirmCancel(order.id),
+              },
+              { text: "↩︎ Назад", callbackData: callbackData.back(order.id) },
+            ],
+          ],
+        );
+        return bot.answerCallback(callback.id);
+      }
+      const action =
+        parsed.kind === "confirm-cancel" ? "cancel" : parsed.action;
+      await applyOwnerAction(
+        { id: callback.id, chatId, messageId },
+        order,
+        action,
+      );
+    } catch (error) {
+      console.error(
+        "Telegram owner action failed",
+        error instanceof Error ? error.message : error,
+      );
+      await bot.answerCallback(
+        callback.id,
+        "Не вдалося змінити статус. Спробуйте в адмінці.",
+      );
+    }
+  }
+
   return {
     /** The t.me link that subscribes a customer's chat to this order. */
     async orderLink(orderNumber: number): Promise<string | null> {
@@ -94,24 +249,19 @@ export function createOrderNotifier(deps: {
         : null;
     },
 
+    /** Sends every owner chat the new order with status buttons. */
     async notifyNewOrder(orderNumber: number) {
       const { ownerChatIds } = await settings.getTelegramSettings();
       if (ownerChatIds.length === 0) return;
       const order = await orders.findByNumber(orderNumber);
       if (!order) return;
-      const buttons = siteUrl
-        ? [
-            [
-              {
-                text: "Відкрити в адмінці",
-                url: `${siteUrl}/admin/orders/${order.id}`,
-              },
-            ],
-          ]
-        : undefined;
       const results = await Promise.allSettled(
         ownerChatIds.map((chatId) =>
-          bot.sendMessage(chatId, ownerNewOrderMessage(order), buttons),
+          bot.sendMessage(
+            chatId,
+            ownerOrderMessage(order),
+            ownerButtons(order),
+          ),
         ),
       );
       for (const result of results) {
@@ -121,22 +271,11 @@ export function createOrderNotifier(deps: {
       }
     },
 
-    /** Tells a subscribed customer what changed. `previous` is before the update. */
-    async notifyStatusChange(orderId: string, previous: Statuses) {
-      const order = await orders.findById(orderId);
-      if (!order?.telegramChatId) return;
-      const changed = {
-        status: order.status !== previous.status,
-        paymentStatus: order.paymentStatus !== previous.paymentStatus,
-      };
-      if (!changed.status && !changed.paymentStatus) return;
-      const { bankDetails } = await seller();
-      const text = statusChangedMessage(order, changed, bankDetails);
-      if (text) await bot.sendMessage(order.telegramChatId, text);
-    },
+    notifyStatusChange,
 
-    /** Reacts to a message sent to the bot (via the webhook). */
+    /** Reacts to a message or button press sent to the bot (via the webhook). */
     async handleUpdate(update: TelegramUpdate) {
+      if (update.callback_query) return handleOwnerPress(update.callback_query);
       const message = update.message;
       const text = message?.text?.trim();
       if (!message || !text) return;
@@ -156,7 +295,7 @@ export function createOrderNotifier(deps: {
       await bot.sendMessage(chatId, helpMessage(phone));
     },
 
-    /** A single-use link the owner opens to receive new-order alerts. */
+    /** A single-use link the owner opens to receive new-order cards. */
     async createOwnerConnectLink() {
       const code = newCode();
       const current = await settings.getTelegramSettings();

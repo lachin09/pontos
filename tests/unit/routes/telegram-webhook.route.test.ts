@@ -59,4 +59,24 @@ describe("POST /api/telegram/webhook", () => {
     vi.stubEnv("TELEGRAM_BOT_TOKEN", "");
     expect((await send(webhookSecretFor(""))).status).toBe(404);
   });
+
+  it("passes button presses through", async () => {
+    const press = {
+      update_id: 2,
+      callback_query: {
+        id: "cb1",
+        from: { id: 777 },
+        data: "o:c:3f2b1c9e000040008000000000000001",
+        message: { message_id: 9, date: 0, chat: { id: 777, type: "private" } },
+      },
+    };
+    await send(webhookSecretFor("123:test-token"), press);
+    expect(handleUpdate).toHaveBeenCalledWith({
+      callback_query: {
+        id: "cb1",
+        data: "o:c:3f2b1c9e000040008000000000000001",
+        message: { message_id: 9, chat: { id: 777 } },
+      },
+    });
+  });
 });
