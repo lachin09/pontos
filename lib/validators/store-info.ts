@@ -34,6 +34,8 @@ export const sellerSchema = z.object({
   email: z.union([z.literal(""), z.email("Вкажіть коректну пошту").max(200)]),
   phone: text(40),
   workingHours: text(200),
+  /** Sent to bank-transfer customers by the Telegram bot; not shown on the site. */
+  bankDetails: text(1000).default(""),
 });
 
 export const storeInfoSchema = z.object({
@@ -59,6 +61,7 @@ export const EMPTY_STORE_INFO: StoreInfo = {
     email: "",
     phone: "",
     workingHours: "",
+    bankDetails: "",
   },
   pages: Object.fromEntries(
     INFO_PAGE_SLUGS.map((slug) => [slug, ""]),

@@ -71,3 +71,27 @@ export interface OrderDetails {
   items: OrderItem[];
   history: OrderStatusChange[];
 }
+
+/** What the Telegram messages need to know about an order. */
+export interface NotifiableOrder {
+  id: string;
+  orderNumber: number;
+  publicToken: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  city: string;
+  deliveryCountryCode: string;
+  deliveryMethod: DeliveryMethod;
+  deliveryAddress: string;
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  status: OrderStatus;
+  comment: string | null;
+  subtotal: number;
+  telegramChatId: number | null;
+  items: Pick<
+    OrderItem,
+    "productName" | "size" | "color" | "quantity" | "subtotal"
+  >[];
+}

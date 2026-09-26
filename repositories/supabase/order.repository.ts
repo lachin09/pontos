@@ -5,8 +5,10 @@ import { PG } from "@/lib/supabase/db-error";
 import { PRODUCT_IMAGES_BUCKET } from "@/lib/storage/image-storage";
 import type {
   OrderAdminRepository,
+  OrderNotificationRepository,
   OrderPlacementRepository,
 } from "@/repositories/order.repository";
+import type { NotifiableOrder } from "@/types/order";
 
 /** Needs the service-role client: the RPC prices items and reserves stock. */
 export function createSupabaseOrderPlacementRepository(
@@ -88,6 +90,18 @@ export function createSupabaseOrderAdminRepository(
       }));
     },
 
+    async getStatuses(id) {
+      const { data, error } = await client
+        .from("orders")
+        .select("status, payment_status")
+        .eq("id", id)
+        .maybeSingle();
+      if (error) throw error;
+      return data
+        ? { status: data.status, paymentStatus: data.payment_status }
+        : null;
+    },
+
     async getDetails(id) {
       const [{ data: order, error }, { data: history }] = await Promise.all([
         client
@@ -156,6 +170,69 @@ export function createSupabaseOrderAdminRepository(
       });
       if (error) throw error;
       return Boolean(data);
+    },
+  };
+}
+
+const notifiableColumns =
+  "id, order_number, public_token, first_name, last_name, phone, city, delivery_country_code, delivery_method, delivery_address, payment_method, payment_status, status, comment, subtotal, telegram_chat_id, order_items(product_name, size, color, quantity, subtotal)";
+
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/** Needs the service-role client: orders have no public read policy. */
+export function createSupabaseOrderNotificationRepository(
+  client: SupabaseClient<Database>,
+): OrderNotificationRepository {
+  async function findOne(
+    column: "id" | "order_number" | "public_token",
+    value: string | number,
+  ): Promise<NotifiableOrder | null> {
+    const { data, error } = await client
+      .from("orders")
+      .select(notifiableColumns)
+      .eq(column, value)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return null;
+    return {
+      id: data.id,
+      orderNumber: data.order_number,
+      publicToken: data.public_token,
+      firstName: data.first_name,
+      lastName: data.last_name,
+      phone: data.phone,
+      city: data.city,
+      deliveryCountryCode: data.delivery_country_code,
+      deliveryMethod: data.delivery_method,
+      deliveryAddress: data.delivery_address,
+      paymentMethod: data.payment_method,
+      paymentStatus: data.payment_status,
+      status: data.status,
+      comment: data.comment,
+      subtotal: Number(data.subtotal),
+      telegramChatId: data.telegram_chat_id,
+      items: data.order_items.map((item) => ({
+        productName: item.product_name,
+        size: item.size,
+        color: item.color,
+        quantity: item.quantity,
+        subtotal: Number(item.subtotal),
+      })),
+    };
+  }
+
+  return {
+    findById: (id) =>
+      UUID.test(id) ? findOne("id", id) : Promise.resolve(null),
+    findByNumber: (orderNumber) => findOne("order_number", orderNumber),
+    findByToken: (token) =>
+      UUID.test(token) ? findOne("public_token", token) : Promise.resolve(null),
+    async setTelegramChat(orderId, chatId) {
+      const { error } = await client
+        .from("orders")
+        .update({ telegram_chat_id: chatId })
+        .eq("id", orderId);
+      if (error) throw error;
     },
   };
 }

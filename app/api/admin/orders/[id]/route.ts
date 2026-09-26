@@ -2,6 +2,7 @@ import { z } from "zod";
 import { badRequest, notFound } from "@/lib/errors";
 import { adminRoute, json, readJson } from "@/lib/http/route";
 import { ORDER_STATUSES, PAYMENT_STATUSES } from "@/lib/constants/order";
+import { notifyInBackground } from "@/lib/server/storefront-services";
 
 type Context = RouteContext<"/api/admin/orders/[id]">;
 
@@ -17,13 +18,21 @@ export const PATCH = adminRoute<Context>(
       message: "Перевірте статуси замовлення.",
       invalidMessage: "Оберіть коректні статуси.",
     });
+    let previous;
     let updated: boolean;
     try {
+      // Read first so the customer is only told about real changes.
+      previous = await services.orders.getStatuses(id);
       updated = await services.orders.updateStatus(id, status, paymentStatus);
     } catch {
       throw badRequest("Не вдалося оновити замовлення.");
     }
-    if (!updated) throw notFound("Замовлення не знайдено.");
+    if (!updated || !previous) throw notFound("Замовлення не знайдено.");
+
+    const before = previous;
+    notifyInBackground("status update", (notifier) =>
+      notifier.notifyStatusChange(id, before),
+    );
     return json({ ok: true });
   },
 );

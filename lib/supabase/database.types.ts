@@ -181,8 +181,10 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"];
           payment_status: Database["public"]["Enums"]["payment_status"];
           phone: string;
+          public_token: string;
           status: Database["public"]["Enums"]["order_status"];
           subtotal: number;
+          telegram_chat_id: number | null;
           total: number;
           updated_at: string;
         };
@@ -206,8 +208,10 @@ export type Database = {
           payment_method: Database["public"]["Enums"]["payment_method"];
           payment_status?: Database["public"]["Enums"]["payment_status"];
           phone: string;
+          public_token?: string;
           status?: Database["public"]["Enums"]["order_status"];
           subtotal: number;
+          telegram_chat_id?: number | null;
           total: number;
           updated_at?: string;
         };
@@ -231,8 +235,10 @@ export type Database = {
           payment_method?: Database["public"]["Enums"]["payment_method"];
           payment_status?: Database["public"]["Enums"]["payment_status"];
           phone?: string;
+          public_token?: string;
           status?: Database["public"]["Enums"]["order_status"];
           subtotal?: number;
+          telegram_chat_id?: number | null;
           total?: number;
           updated_at?: string;
         };

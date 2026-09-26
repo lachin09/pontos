@@ -73,7 +73,9 @@ describe("adminRoute()", () => {
       async (_req: Request, ctx: { services: unknown; params: string }) =>
         Response.json({ services: ctx.services, params: ctx.params }),
     );
-    const response = await adminRoute<{ params: string }>(inner)(request(), { params: "p" });
+    const response = await adminRoute<{ params: string }>(inner)(request(), {
+      params: "p",
+    });
     await expect(response.json()).resolves.toEqual({
       services: { client },
       params: "p",

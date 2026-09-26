@@ -58,6 +58,12 @@ export default async function AdminLayout({
             >
               Інформація
             </Link>
+            <Link
+              href="/admin/settings/telegram"
+              className="hidden text-sm text-muted hover:text-foreground sm:inline"
+            >
+              Telegram
+            </Link>
           </div>
           <div className="flex items-center gap-2">
             <AdminNotificationBell />

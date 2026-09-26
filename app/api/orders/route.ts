@@ -3,7 +3,11 @@ import { z } from "zod";
 import { AppError, badRequest } from "@/lib/errors";
 import { CACHE_TAGS } from "@/lib/data/cache-tags";
 import { assertSameOrigin, json, readJson, route } from "@/lib/http/route";
-import { getOrderPlacement } from "@/lib/server/storefront-services";
+import {
+  getOrderNotifier,
+  getOrderPlacement,
+  notifyInBackground,
+} from "@/lib/server/storefront-services";
 import { createOrderSchema } from "@/lib/validators/order";
 
 const idempotencySchema = z.string().uuid();
@@ -39,12 +43,29 @@ export const POST = route(async (request) => {
   if (placed.wasCreated) {
     // Stock changed; refresh availability in the background.
     revalidateTag(CACHE_TAGS.products, "max");
+    notifyInBackground("new-order alert", (notifier) =>
+      notifier.notifyNewOrder(placed.orderNumber),
+    );
   }
+
+  // Optional: a link that subscribes the customer's Telegram to this order.
+  let telegramUrl: string | null = null;
+  try {
+    telegramUrl =
+      (await getOrderNotifier()?.orderLink(placed.orderNumber)) ?? null;
+  } catch (error) {
+    console.error(
+      "Telegram link unavailable",
+      error instanceof Error ? error.message : error,
+    );
+  }
+
   return json(
     {
       orderNumber: placed.orderNumber,
       total: placed.total,
       paymentStatus: placed.paymentStatus,
+      telegramUrl,
     },
     placed.wasCreated ? 201 : 200,
   );

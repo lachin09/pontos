@@ -5,8 +5,15 @@ import type { CheckoutData } from "@/lib/validators/checkout";
 const place = vi.fn();
 const revalidateTag = vi.fn();
 vi.mock("next/cache", () => ({ revalidateTag }));
+const orderLink = vi.fn();
+const notifyNewOrder = vi.fn();
+let botConfigured = true;
 vi.mock("@/lib/server/storefront-services", () => ({
   getOrderPlacement: () => ({ place }),
+  getOrderNotifier: () => (botConfigured ? { orderLink } : null),
+  // Run the background task straight away so the test can observe it.
+  notifyInBackground: (_label: string, task: (n: unknown) => unknown) =>
+    task({ notifyNewOrder }),
 }));
 
 const { POST } = await import("@/app/api/orders/route");
@@ -45,8 +52,9 @@ function post(body: unknown, headers: Record<string, string> = {}) {
 }
 
 beforeEach(() => {
-  place.mockReset();
-  revalidateTag.mockReset();
+  vi.clearAllMocks();
+  botConfigured = true;
+  orderLink.mockResolvedValue("https://t.me/pontos_bot?start=o_abc");
 });
 
 describe("POST /api/orders", () => {
@@ -63,9 +71,32 @@ describe("POST /api/orders", () => {
       orderNumber: 1042,
       total: 3000,
       paymentStatus: "cash_on_delivery",
+      telegramUrl: "https://t.me/pontos_bot?start=o_abc",
     });
     expect(place).toHaveBeenCalledWith(order, KEY);
     expect(revalidateTag).toHaveBeenCalledWith("products", "max");
+    expect(notifyNewOrder).toHaveBeenCalledWith(1042);
+  });
+
+  it("still succeeds without a Telegram link when the bot is off or failing", async () => {
+    place.mockResolvedValue({
+      orderNumber: 7,
+      total: 100,
+      paymentStatus: "pending",
+      wasCreated: true,
+    });
+    botConfigured = false;
+    await expect((await post(order)).json()).resolves.toMatchObject({
+      orderNumber: 7,
+      telegramUrl: null,
+    });
+
+    botConfigured = true;
+    orderLink.mockRejectedValue(new Error("telegram down"));
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    const response = await post(order);
+    expect(response.status).toBe(201);
+    await expect(response.json()).resolves.toMatchObject({ telegramUrl: null });
   });
 
   it("returns 200 without refreshing stock when the key was already used", async () => {
@@ -78,6 +109,7 @@ describe("POST /api/orders", () => {
     const response = await post(order);
     expect(response.status).toBe(200);
     expect(revalidateTag).not.toHaveBeenCalled();
+    expect(notifyNewOrder).not.toHaveBeenCalled();
   });
 
   it("passes the stock conflict message through", async () => {

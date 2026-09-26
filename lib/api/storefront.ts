@@ -8,6 +8,8 @@ export type OrderConfirmation = {
   orderNumber: number;
   total: number;
   paymentStatus: PaymentStatus;
+  /** Link that subscribes the customer's Telegram; null when the bot is off. */
+  telegramUrl?: string | null;
 };
 
 export const ordersApi = {

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { ContactRound, FileText, LockKeyhole } from "lucide-react";
+import { ContactRound, FileText, LockKeyhole, Send } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "Адміністрування",
@@ -68,6 +68,20 @@ export default function AdminHomePage() {
           </p>
           <span className="mt-5 inline-block text-sm font-medium underline underline-offset-4">
             Редагувати сторінки
+          </span>
+        </Link>
+        <Link
+          href="/admin/settings/telegram"
+          className="rounded-[var(--radius-card)] border border-border bg-surface p-6 transition-colors hover:border-focus sm:p-8"
+        >
+          <Send className="text-accent" size={24} aria-hidden="true" />
+          <h2 className="mt-4 text-lg font-medium">Telegram-бот</h2>
+          <p className="mt-2 text-sm leading-6 text-muted">
+            Підтвердження й статуси для покупців, сповіщення про нові замовлення
+            для вас.
+          </p>
+          <span className="mt-5 inline-block text-sm font-medium underline underline-offset-4">
+            Налаштувати бота
           </span>
         </Link>
       </div>

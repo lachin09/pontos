@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { RichText } from "@/components/content/rich-text";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { adminSettingsApi } from "@/lib/api/admin";
 import { errorMessage } from "@/lib/api/client";
 import { INFO_PAGE_TEMPLATES } from "@/lib/content/store-info-templates";
@@ -124,6 +125,21 @@ export function AdminStoreInfoEditor({
               onChange={(event) => setSeller(field.key, event.target.value)}
             />
           ))}
+        </div>
+        <div className="mt-4">
+          <Textarea
+            id="seller-bankDetails"
+            label="Реквізити для оплати переказом"
+            hint="Не показуються на сайті. Telegram-бот надсилає їх покупцю, коли ви підтверджуєте замовлення з оплатою переказом."
+            placeholder={
+              "Отримувач: ФОП Прізвище І. П.\nIBAN: UA00 0000 0000 0000 0000 0000 000\nРНОКПП: 1234567890"
+            }
+            rows={4}
+            maxLength={1000}
+            value={info.seller.bankDetails}
+            disabled={busy}
+            onChange={(event) => setSeller("bankDetails", event.target.value)}
+          />
         </div>
       </section>
 

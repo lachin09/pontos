@@ -3,6 +3,7 @@ import type { AdminProductInput } from "@/lib/validators/admin-product";
 import type { AdminCategoryInput } from "@/lib/validators/admin-category";
 import type { ContactLinksInput } from "@/lib/validators/contact-links";
 import type { StoreInfo } from "@/lib/validators/store-info";
+import type { TelegramStatus } from "@/lib/validators/telegram";
 import type { OrderStatus, PaymentStatus } from "@/lib/constants/order";
 import type { AdminLoginData } from "@/lib/validators/admin-auth";
 
@@ -155,5 +156,27 @@ export const adminSettingsApi = {
       method: "PUT",
       body: info,
       fallbackError: "Не вдалося зберегти інформацію.",
+    }),
+};
+
+export const adminTelegramApi = {
+  status: () => apiRequest<TelegramStatus>("/api/admin/telegram"),
+  connectWebhook: () =>
+    apiRequest("/api/admin/telegram", {
+      method: "POST",
+      body: { action: "connect-webhook" },
+      fallbackError: "Не вдалося підключити бота.",
+    }),
+  ownerLink: () =>
+    apiRequest<{ url: string }>("/api/admin/telegram", {
+      method: "POST",
+      body: { action: "owner-link" },
+      fallbackError: "Не вдалося створити посилання.",
+    }),
+  disconnectOwners: () =>
+    apiRequest("/api/admin/telegram", {
+      method: "POST",
+      body: { action: "disconnect-owners" },
+      fallbackError: "Не вдалося відключити чати.",
     }),
 };

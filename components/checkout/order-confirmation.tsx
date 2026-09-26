@@ -1,4 +1,4 @@
-import { ArrowRight, Check } from "lucide-react";
+import { ArrowRight, Check, Send } from "lucide-react";
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui/button";
 import type { OrderConfirmation as Confirmation } from "@/lib/api/storefront";
@@ -46,8 +46,37 @@ export function OrderConfirmation({
           ? "Реквізити для переказу узгодимо з вами телефоном."
           : "Оплатіть замовлення під час отримання посилки."}
       </p>
+      {confirmation.telegramUrl ? (
+        <div className="mt-6 rounded-[var(--radius-card)] bg-surface-muted p-4 sm:p-5">
+          <p className="text-sm font-medium">
+            Отримуйте статус замовлення в Telegram
+          </p>
+          <p className="mt-1 text-sm text-muted">
+            Надішлемо підтвердження
+            {confirmation.paymentStatus === "pending"
+              ? ", реквізити для оплати"
+              : ""}{" "}
+            і повідомимо, коли посилку відправлять. Безкоштовно.
+          </p>
+          <a
+            href={confirmation.telegramUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={buttonClasses({
+              className: "mt-4 bg-[#229ED9] hover:bg-[#1c8cc2]",
+            })}
+          >
+            <Send size={16} aria-hidden="true" /> Отримати підтвердження в
+            Telegram
+          </a>
+        </div>
+      ) : null}
       <Link
-        className={buttonClasses({ size: "lg", className: "mt-7" })}
+        className={buttonClasses({
+          size: "lg",
+          variant: confirmation.telegramUrl ? "outline" : "primary",
+          className: "mt-7",
+        })}
         href="/catalog"
       >
         Продовжити покупки <ArrowRight size={16} aria-hidden="true" />
