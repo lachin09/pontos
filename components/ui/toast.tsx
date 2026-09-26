@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 
 export interface ToastProps {
   open: boolean;
@@ -32,8 +33,11 @@ export function Toast({
 
   if (!open) return null;
 
-  // Top placement keeps the toast clear of the floating contact button.
-  return (
+  // Portal to <body>: inside a sticky or transformed parent the toast would
+  // be trapped under the site header. Top placement keeps it clear of the
+  // floating contact button. (Only rendered after user actions, so
+  // `document` always exists here.)
+  return createPortal(
     <div className="pointer-events-none fixed inset-x-4 top-[max(1rem,env(safe-area-inset-top))] z-[60] flex justify-center sm:inset-x-6 sm:justify-end">
       <div
         role={variant === "error" ? "alert" : "status"}
@@ -50,6 +54,7 @@ export function Toast({
           <X size={15} aria-hidden="true" />
         </button>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

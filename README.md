@@ -35,5 +35,25 @@ Checkout accepts international destinations. Customers type their Nova Post / Uk
 ```bash
 npm run lint
 npx tsc --noEmit
+npm test          # unit + component tests (Vitest)
+npm run test:e2e  # browser tests (Playwright)
 npm run build
 ```
+
+## Tests
+
+- `tests/unit/` — pure rules, services, API route handlers and the cart store. Services are tested against in-memory fakes (`tests/support/fakes.ts`), so no database is needed.
+- `tests/components/` — React components in jsdom with Testing Library.
+- `tests/e2e/` — Playwright against a production build with the real data from `.env.local`, on desktop and mobile. They never place an order: `tests/e2e/fixtures.ts` blocks `POST /api/orders`. First run: `npx playwright install chromium`.
+- `npm run test:watch` re-runs Vitest on save.
+
+## CI/CD
+
+`.github/workflows/ci-cd.yml` runs on every push and pull request:
+
+1. **Checks** — lint, types, `npm test`.
+2. **Preview** — `vercel deploy` (Vercel builds with the project's env vars); the URL is in the run summary.
+3. **Browser tests** — Playwright against that preview. On failure the report is attached to the run.
+4. **Production** (pushes to `main` only) — `vercel deploy --prod`, then a smoke check of the live site.
+
+Vercel's automatic Git deployments are disabled in `vercel.json`, so nothing reaches production without passing 1–3. Repository secrets: `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`, `VERCEL_AUTOMATION_BYPASS_SECRET` (Vercel → Project → Settings → Deployment Protection → Protection Bypass for Automation). To roll back, use "Instant Rollback" in the Vercel dashboard or `vercel rollback`. Database migrations are still applied manually with `npx supabase db push`.

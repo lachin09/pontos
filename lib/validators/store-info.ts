@@ -21,7 +21,8 @@ export type InfoPageSlug = keyof typeof INFO_PAGES;
 export const INFO_PAGE_SLUGS = Object.keys(INFO_PAGES) as InfoPageSlug[];
 
 export function isInfoPageSlug(value: string): value is InfoPageSlug {
-  return value in INFO_PAGES;
+  // hasOwn, not `in`: "toString" and friends must not count as pages.
+  return Object.hasOwn(INFO_PAGES, value);
 }
 
 const text = (max: number) => z.string().trim().max(max);
