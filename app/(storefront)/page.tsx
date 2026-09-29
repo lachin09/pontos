@@ -127,7 +127,7 @@ export default async function HomePage() {
 
   const trustFacts = [
     { value: "Шкіра · Замша", label: "Натуральні матеріали" },
-    { value: "Еко-хутро", label: "Шуби, коміри та пончо" },
+    { value: "Хутро", label: "Овчина, норка та еко-шуби" },
     {
       value: "Київ",
       label: seller.workingHours ? `Шоурум · ${seller.workingHours}` : "Шоурум",
@@ -173,8 +173,8 @@ export default async function HomePage() {
           <div className="mx-auto max-w-[1440px] px-page py-16 sm:py-24">
             <SectionHeading
               eyebrow="Колекції"
-              title="Шкіра, замша, еко-хутро."
-              description="Натуральна шкіра та замша, м'яке й тепле еко-хутро. Оберіть категорію."
+              title="Шкіра, замша, хутро."
+              description="Натуральна шкіра, замша та хутро, а також жіночі еко-шуби. Оберіть категорію."
             />
             <div
               className={`grid grid-cols-2 gap-3 sm:gap-4 ${collections.length === 4 ? "lg:grid-cols-4" : "lg:grid-cols-3"}`}
@@ -320,7 +320,7 @@ export default async function HomePage() {
               Приміряйте перед покупкою
             </h2>
             <p className="mt-6 max-w-md text-sm leading-7 text-white/65 sm:text-base">
-              Шкіру й замшу варто побачити наживо. Приходьте до шоуруму на
+              Шкіру й хутро варто побачити наживо. Приходьте до шоуруму на
               примірку або замовляйте з доставкою по Україні та за кордон —
               оплата при отриманні.
             </p>

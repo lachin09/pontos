@@ -6,7 +6,7 @@ test.describe("site navigation", () => {
 
     await expect(page).toHaveTitle(/PONTOS/);
     await expect(
-      page.getByRole("heading", { level: 1, name: "Шкіра та замша" }),
+      page.getByRole("heading", { level: 1, name: "Шкіра та хутро" }),
     ).toBeVisible();
     await expect(
       page.getByRole("link", { name: "Переглянути колекцію" }),

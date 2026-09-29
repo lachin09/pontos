@@ -71,7 +71,7 @@ export async function SiteFooter() {
             Pontos
           </Link>
           <p className="mt-4 max-w-xs font-serif text-lg italic leading-snug text-white/60">
-            Натуральна шкіра, замша та еко-хутро.
+            Натуральна шкіра, замша та хутро.
           </p>
           {socials.length > 0 ? (
             <ul className="mt-6 flex gap-2">

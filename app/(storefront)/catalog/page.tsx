@@ -17,7 +17,7 @@ import { filterAndSortProducts } from "@/services/product.service";
 export const metadata: Metadata = {
   title: "Каталог",
   description:
-    "Куртки, дублянки, пальта та еко-шуби PONTOS з натуральної шкіри, замші та еко-хутра.",
+    "Куртки, дублянки, пальта та еко-шуби PONTOS з натуральної шкіри, замші та хутра.",
 };
 
 type SearchValue = string | string[] | undefined;
@@ -196,7 +196,7 @@ export default async function CatalogPage({
             </h1>
             <p className="mt-3 max-w-xl text-sm leading-6 text-muted">
               {selectedCategory?.description ||
-                "Натуральна шкіра, замша та еко-хутро."}
+                "Натуральна шкіра, замша та хутро."}
             </p>
           </div>
           <p className="text-sm text-muted tabular-nums" aria-live="polite">

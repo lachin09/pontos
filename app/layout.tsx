@@ -15,11 +15,11 @@ const cormorant = Cormorant_Garamond({
 
 export const metadata: Metadata = {
   title: {
-    default: "PONTOS — шкіра, замша, еко-хутро",
+    default: "PONTOS — шкіра та хутро",
     template: "%s | PONTOS",
   },
   description:
-    "Чоловічий і жіночий верхній одяг з натуральної шкіри та замші, еко-шуби та пончо з еко-хутра. Шоурум у Києві, доставка по Україні та за кордон.",
+    "Чоловічий і жіночий верхній одяг з натуральної шкіри, замші та хутра, а також жіночі еко-шуби. Шоурум у Києві, доставка по Україні та за кордон.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

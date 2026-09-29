@@ -122,14 +122,14 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
             <div className="max-w-xl">
               <p className="eyebrow flex items-center gap-3 text-gold">
                 <span className="h-px w-10 bg-gold/70" aria-hidden="true" />
-                Натуральна шкіра · Замша · Еко-хутро
+                Натуральна шкіра · Замша · Хутро
               </p>
               <h1 className="mt-4 text-[clamp(3.25rem,8vw,7rem)] leading-[0.92] text-white">
-                Шкіра та замша
+                Шкіра та хутро
               </h1>
               <p className="mt-5 hidden max-w-md text-sm leading-7 text-white/75 sm:block sm:text-base">
-                Куртки, дублянки та пальта з натуральної шкіри й замші, еко-шуби
-                та пончо з м’якого еко-хутра — для холодного сезону й щоденного
+                Куртки, дублянки та пальта з натуральної шкіри, замші та хутра,
+                а також жіночі еко-шуби — для холодного сезону й щоденного
                 міста.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8">
