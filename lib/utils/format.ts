@@ -32,3 +32,17 @@ export function pluralize(
 export function formatItemCount(count: number): string {
   return `${count} ${pluralize(count, ["товар", "товари", "товарів"])}`;
 }
+
+/** Digits of a phone number in international form: 0971234567 → 380971234567. */
+export function normalizePhoneDigits(value: string): string {
+  const enteredDigits = value.replace(/\D/g, "");
+  if (enteredDigits.startsWith("00")) return enteredDigits.slice(2);
+  if (enteredDigits.startsWith("0") && enteredDigits.length === 10) {
+    return `38${enteredDigits}`;
+  }
+  return enteredDigits;
+}
+
+export function telHref(value: string): string {
+  return `tel:+${normalizePhoneDigits(value)}`;
+}

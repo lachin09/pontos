@@ -1,18 +1,8 @@
-import {
-  FloatingContactMenu,
-  type ContactLink,
-} from "@/components/layout/floating-contact-menu";
+import type { ContactLink } from "@/components/layout/contact-icons";
+import { FloatingContactMenu } from "@/components/layout/floating-contact-menu";
 import { getContactLinks } from "@/lib/data/storefront";
+import { normalizePhoneDigits } from "@/lib/utils/format";
 import type { ContactLinkRecord } from "@/lib/validators/contact-links";
-
-function normalizedPhone(value: string) {
-  const enteredDigits = value.replace(/\D/g, "");
-  if (enteredDigits.startsWith("00")) return enteredDigits.slice(2);
-  if (enteredDigits.startsWith("0") && enteredDigits.length === 10) {
-    return `38${enteredDigits}`;
-  }
-  return enteredDigits;
-}
 
 function profileUrl(value: string, domain: string) {
   if (/^https?:\/\//i.test(value)) {
@@ -21,11 +11,13 @@ function profileUrl(value: string, domain: string) {
   return `https://${domain}/${value.replace(/^@/, "")}`;
 }
 
-function resolveLinks(records: ContactLinkRecord[]): ContactLink[] {
+export function resolveContactLinks(
+  records: ContactLinkRecord[],
+): ContactLink[] {
   return records.flatMap((record): ContactLink[] => {
     const value = record.value.trim();
     if (record.type === "phone") {
-      const digits = normalizedPhone(value);
+      const digits = normalizePhoneDigits(value);
       return digits
         ? [
             {
@@ -38,7 +30,7 @@ function resolveLinks(records: ContactLinkRecord[]): ContactLink[] {
         : [];
     }
     if (record.type === "whatsapp") {
-      const digits = normalizedPhone(value);
+      const digits = normalizePhoneDigits(value);
       return digits
         ? [
             {
@@ -97,5 +89,5 @@ export async function FloatingContactButton() {
     // The contact menu is optional; the storefront still renders without it.
   }
 
-  return <FloatingContactMenu links={resolveLinks(records)} />;
+  return <FloatingContactMenu links={resolveContactLinks(records)} />;
 }

@@ -57,7 +57,8 @@ describe("filterAndSortProducts", () => {
     ).toEqual([]);
   });
 
-  it("with availableOnly, drops unavailable products and variants", () => {
+  it("with availableOnly, keeps only products with a size in stock", () => {
+    // Бомбер is switched off; Куртка is on but its only size is sold out.
     expect(
       names(
         filterAndSortProducts(all(), {
@@ -65,7 +66,7 @@ describe("filterAndSortProducts", () => {
           sort: "price-asc",
         }),
       ),
-    ).toEqual(["Куртка", "Пальто"]);
+    ).toEqual(["Пальто"]);
     // Куртка's only L variant is unavailable.
     expect(
       filterAndSortProducts(all(), { availableOnly: true, size: "L" }),

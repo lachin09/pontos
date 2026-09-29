@@ -9,13 +9,15 @@ import {
   getActiveCategories,
   getPublishedProducts,
 } from "@/lib/data/storefront";
+import { categoryGender, GENDERS, parseGender } from "@/lib/catalog/gender";
+import { compareSizes } from "@/lib/product/sizes";
 import { formatPrice, pluralize } from "@/lib/utils/format";
 import { filterAndSortProducts } from "@/services/product.service";
 
 export const metadata: Metadata = {
-  title: "Каталог одягу",
+  title: "Каталог",
   description:
-    "Перегляньте колекцію повсякденного одягу PONTOS та знайдіть свою річ.",
+    "Куртки, дублянки, пальта та еко-шуби PONTOS з натуральної шкіри, замші та еко-хутра.",
 };
 
 type SearchValue = string | string[] | undefined;
@@ -58,6 +60,7 @@ export default async function CatalogPage({
   const maxPrice = parsePrice(firstValue(query.maxPrice));
   const availableOnly = firstValue(query.availability) === "available";
   const sort = parseSort(firstValue(query.sort));
+  const gender = parseGender(firstValue(query.gender));
 
   const [categories, products] = await Promise.all([
     getActiveCategories(),
@@ -66,21 +69,55 @@ export default async function CatalogPage({
   const selectedCategory = categorySlug
     ? categories.find((category) => category.slug === categorySlug)
     : undefined;
+  // A chosen line (men's / women's) narrows the categories and products.
+  const lineCategories = gender
+    ? categories.filter((category) => categoryGender(category) === gender)
+    : categories;
+  const lineCategoryIds = new Set(
+    lineCategories.map((category) => category.id),
+  );
+  const lineProducts = gender
+    ? products.filter((product) => lineCategoryIds.has(product.categoryId))
+    : products;
+  const categoryProductCounts = new Map<string, number>();
+  for (const product of lineProducts) {
+    categoryProductCounts.set(
+      product.categoryId,
+      (categoryProductCounts.get(product.categoryId) ?? 0) + 1,
+    );
+  }
+  const visibleCategories = lineCategories.filter((category) =>
+    categoryProductCounts.has(category.id),
+  );
+  const lines = GENDERS.filter((line) =>
+    products.some((product) => {
+      const category = categories.find(
+        (item) => item.id === product.categoryId,
+      );
+      return category ? categoryGender(category) === line.value : false;
+    }),
+  );
+  // Size and colour options come from the products being browsed.
+  const scopeProducts = selectedCategory
+    ? lineProducts.filter(
+        (product) => product.categoryId === selectedCategory.id,
+      )
+    : lineProducts;
   const sizes = Array.from(
     new Set(
-      products.flatMap((product) =>
+      scopeProducts.flatMap((product) =>
         product.variants.map((variant) => variant.size),
       ),
     ),
-  ).sort((a, b) => a.localeCompare(b, "uk"));
+  ).sort(compareSizes);
   const colors = Array.from(
     new Set(
-      products.flatMap((product) =>
+      scopeProducts.flatMap((product) =>
         product.variants.map((variant) => variant.color),
       ),
     ),
   ).sort((a, b) => a.localeCompare(b, "uk"));
-  const filteredProducts = filterAndSortProducts(products, {
+  const filteredProducts = filterAndSortProducts(lineProducts, {
     categoryId: categorySlug
       ? (selectedCategory?.id ?? "__unknown_category__")
       : undefined,
@@ -100,6 +137,7 @@ export default async function CatalogPage({
     availableOnly ? "availability" : undefined,
   ].filter(Boolean).length;
   const currentParams: Record<string, string | undefined> = {
+    gender,
     category: categorySlug,
     size,
     color,
@@ -128,7 +166,8 @@ export default async function CatalogPage({
       : null,
   ].filter((chip) => chip !== null);
   const filterFormProps = {
-    categories,
+    categories: visibleCategories,
+    gender,
     sizes,
     colors,
     category: categorySlug,
@@ -142,17 +181,22 @@ export default async function CatalogPage({
   };
 
   return (
-    <div className="mx-auto min-h-[65vh] max-w-[1440px] px-page py-8 sm:py-12">
-      <div className="mb-6 sm:mb-8">
-        <p className="eyebrow">PONTOS · essentials</p>
-        <div className="mt-3 flex flex-wrap items-end justify-between gap-x-4 gap-y-2">
+    <div className="mx-auto min-h-[65vh] max-w-[1440px] px-page py-10 sm:py-14">
+      <div className="mb-8 border-b border-border pb-8 sm:mb-10">
+        <p className="eyebrow flex items-center gap-3">
+          <span className="h-px w-8 bg-gold/60" aria-hidden="true" />
+          {gender
+            ? GENDERS.find((line) => line.value === gender)?.label
+            : "PONTOS"}
+        </p>
+        <div className="mt-4 flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
           <div>
-            <h1 className="text-4xl leading-tight sm:text-5xl">
+            <h1 className="text-[2.75rem] leading-none sm:text-6xl">
               {selectedCategory?.name ?? "Каталог"}
             </h1>
-            <p className="mt-2 max-w-xl text-sm leading-6 text-muted">
+            <p className="mt-3 max-w-xl text-sm leading-6 text-muted">
               {selectedCategory?.description ||
-                "Речі для щоденного гардероба — оберіть свою форму, колір і розмір."}
+                "Натуральна шкіра, замша та еко-хутро."}
             </p>
           </div>
           <p className="text-sm text-muted tabular-nums" aria-live="polite">
@@ -160,33 +204,55 @@ export default async function CatalogPage({
             {pluralize(filteredProducts.length, ["товар", "товари", "товарів"])}
           </p>
         </div>
-      </div>
-
-      {categories.length > 0 ? (
-        <nav
-          aria-label="Категорії"
-          className="scrollbar-none -mx-page mb-6 overflow-x-auto px-page sm:mb-8"
-        >
-          <ul className="flex w-max gap-2">
-            {[{ name: "Усі", slug: undefined }, ...categories].map((item) => {
-              const isCurrent = item.slug === categorySlug;
+        {lines.length > 1 ? (
+          <nav aria-label="Колекції" className="mt-6 flex gap-6">
+            {[{ value: undefined, label: "Усі" }, ...lines].map((line) => {
+              const isCurrent = line.value === gender;
               return (
-                <li key={item.slug ?? "all"}>
-                  <Link
-                    href={catalogHref(currentParams, { category: item.slug })}
-                    aria-current={isCurrent ? "page" : undefined}
-                    className={`inline-flex min-h-10 items-center whitespace-nowrap rounded-full border px-4 text-sm transition-colors ${isCurrent ? "border-foreground bg-foreground text-background" : "border-border bg-surface hover:border-foreground"}`}
-                  >
-                    {item.name}
-                  </Link>
-                </li>
+                <Link
+                  key={line.label}
+                  href={catalogHref(
+                    { sort: currentParams.sort },
+                    { gender: line.value },
+                  )}
+                  aria-current={isCurrent ? "page" : undefined}
+                  className="border-b border-transparent pb-1 text-[0.7rem] font-medium uppercase tracking-[0.2em] text-muted transition-colors hover:text-foreground aria-[current=page]:border-gold aria-[current=page]:text-foreground"
+                >
+                  {line.label}
+                </Link>
               );
             })}
+          </nav>
+        ) : null}
+      </div>
+
+      {visibleCategories.length > 0 ? (
+        <nav
+          aria-label="Категорії"
+          className="scrollbar-none -mx-page mb-8 overflow-x-auto px-page"
+        >
+          <ul className="flex w-max gap-2">
+            {[{ name: "Усі", slug: undefined }, ...visibleCategories].map(
+              (item) => {
+                const isCurrent = item.slug === categorySlug;
+                return (
+                  <li key={item.slug ?? "all"}>
+                    <Link
+                      href={catalogHref(currentParams, { category: item.slug })}
+                      aria-current={isCurrent ? "page" : undefined}
+                      className={`inline-flex min-h-10 items-center whitespace-nowrap border px-4 text-[0.8rem] tracking-[0.02em] transition-colors ${isCurrent ? "border-foreground bg-foreground text-background" : "border-border bg-surface hover:border-foreground"}`}
+                    >
+                      {item.name}
+                    </Link>
+                  </li>
+                );
+              },
+            )}
           </ul>
         </nav>
       ) : null}
 
-      <details className="group mb-5 rounded-[var(--radius-card)] border border-border bg-surface lg:hidden">
+      <details className="group mb-6 border border-border bg-surface lg:hidden">
         <summary className="flex min-h-12 cursor-pointer list-none items-center justify-between gap-3 px-4 text-sm font-semibold [&::-webkit-details-marker]:hidden">
           <span className="flex items-center gap-2">
             <SlidersHorizontal size={16} aria-hidden="true" />
@@ -209,10 +275,10 @@ export default async function CatalogPage({
         </div>
       </details>
 
-      <div className="grid items-start gap-8 lg:grid-cols-[240px_1fr] lg:gap-10">
+      <div className="grid items-start gap-8 lg:grid-cols-[250px_1fr] lg:gap-10">
         <aside
           aria-label="Фільтри каталогу"
-          className="hidden rounded-[var(--radius-card)] border border-border bg-surface p-5 lg:sticky lg:top-24 lg:block"
+          className="hidden border-r border-border pr-8 lg:sticky lg:top-32 lg:block"
         >
           <CatalogFilterForm idPrefix="catalog-desktop" {...filterFormProps} />
         </aside>
@@ -242,7 +308,7 @@ export default async function CatalogPage({
               ))}
               <li>
                 <Link
-                  href={catalogHref({}, { category: categorySlug })}
+                  href={catalogHref({}, { gender, category: categorySlug })}
                   className="inline-flex min-h-9 items-center px-2 text-xs text-muted underline underline-offset-4 hover:text-foreground"
                 >
                   Скинути все
@@ -257,9 +323,9 @@ export default async function CatalogPage({
               ))}
             </div>
           ) : (
-            <div className="grid min-h-72 place-items-center rounded-[var(--radius-card)] border border-dashed border-border bg-surface px-6 py-12 text-center">
+            <div className="grid min-h-72 place-items-center border border-dashed border-border bg-surface px-6 py-12 text-center">
               <div>
-                <h2 className="text-2xl">Нічого не знайдено</h2>
+                <h2 className="text-3xl">Нічого не знайдено</h2>
                 <p className="mt-2 max-w-sm text-sm leading-6 text-muted">
                   Спробуйте змінити фільтри або перегляньте всі товари колекції.
                 </p>

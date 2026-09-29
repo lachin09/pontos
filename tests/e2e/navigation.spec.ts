@@ -6,10 +6,10 @@ test.describe("site navigation", () => {
 
     await expect(page).toHaveTitle(/PONTOS/);
     await expect(
-      page.getByRole("heading", { level: 1, name: /Щодня/ }),
+      page.getByRole("heading", { level: 1, name: "Шкіра та замша" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("link", { name: "Знайти свою річ" }),
+      page.getByRole("link", { name: "Переглянути колекцію" }),
     ).toHaveAttribute("href", "/catalog");
 
     const header = page.getByRole("banner");
@@ -89,7 +89,7 @@ test.describe("mobile menu", () => {
     const drawer = page.getByRole("dialog", { name: "Меню" });
     await expect(menuButton).toHaveAttribute("aria-expanded", "true");
     const nav = drawer.getByRole("navigation", { name: "Мобільна навігація" });
-    for (const label of ["Каталог", "Категорії", "Новинки", "Про нас"]) {
+    for (const label of ["Новинки", "Каталог"]) {
       await expect(nav.getByRole("link", { name: label })).toBeVisible();
     }
 

@@ -23,7 +23,16 @@ export function filterAndSortProducts(
       return false;
     if (filters.maxPrice !== undefined && product.price > filters.maxPrice)
       return false;
-    if (filters.availableOnly && !product.isAvailable) return false;
+    // In stock means some size can actually be bought, not just that the
+    // product is switched on.
+    if (
+      filters.availableOnly &&
+      !(
+        product.isAvailable &&
+        product.variants.some((variant) => variant.isAvailable)
+      )
+    )
+      return false;
     if (filters.size || filters.color) {
       const hasMatchingVariant = product.variants.some(
         (variant) =>

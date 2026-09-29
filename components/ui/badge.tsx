@@ -3,7 +3,7 @@ import type { HTMLAttributes, ReactNode } from "react";
 export type BadgeVariant = "neutral" | "accent" | "sale" | "success" | "danger";
 
 const variantClasses: Record<BadgeVariant, string> = {
-  neutral: "bg-surface-muted text-foreground",
+  neutral: "bg-surface/90 text-foreground backdrop-blur-sm",
   accent: "bg-accent text-accent-foreground",
   sale: "bg-highlight text-white",
   success: "bg-green-100 text-success",
@@ -23,7 +23,7 @@ export function Badge({
 }: BadgeProps) {
   return (
     <span
-      className={`inline-flex items-center rounded-full px-2.5 py-1 text-[0.6875rem] font-medium leading-none tracking-wide ${variantClasses[variant]} ${className}`}
+      className={`inline-flex items-center rounded-[2px] px-2 py-1 text-[0.625rem] font-medium uppercase leading-none tracking-[0.12em] ${variantClasses[variant]} ${className}`}
       {...props}
     >
       {children}

@@ -46,26 +46,39 @@ export function ProductCard({ product }: { product: Product }) {
           ) : null}
         </span>
       </div>
-      <div className="flex items-start justify-between gap-3 pt-3">
-        <div className="min-w-0">
-          <h3 className="line-clamp-2 text-sm font-medium leading-snug text-foreground sm:text-[0.95rem]">
-            <Link
-              href={`/product/${product.slug}`}
-              className="outline-none transition-colors after:absolute after:inset-0 after:rounded-[var(--radius-card)] group-hover:text-accent"
+      <div className="pt-3.5">
+        <h3 className="line-clamp-2 font-serif text-[1.05rem] leading-snug text-foreground sm:text-[1.15rem]">
+          <Link
+            href={`/product/${product.slug}`}
+            className="outline-none transition-colors after:absolute after:inset-0 after:rounded-[var(--radius-card)] group-hover:text-gold"
+          >
+            {product.name}
+          </Link>
+        </h3>
+        <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
+          <p className="flex items-baseline gap-2 tabular-nums">
+            {isOnSale && product.oldPrice ? (
+              <span className="text-xs text-muted line-through">
+                <span className="sr-only">Стара ціна: </span>
+                {formatPrice(product.oldPrice)}
+              </span>
+            ) : null}
+            <span
+              className={`text-sm font-semibold ${isOnSale ? "text-highlight" : "text-foreground"}`}
             >
-              {product.name}
-            </Link>
-          </h3>
-          {colors.length > 0 ? (
+              {formatPrice(product.price)}
+            </span>
+          </p>
+          {colors.length > 1 ? (
             <div
               role="img"
-              className="mt-2 flex items-center gap-1.5"
+              className="flex items-center gap-1.5"
               aria-label={`${colors.length} ${pluralize(colors.length, ["колір", "кольори", "кольорів"])}: ${colors.map((variant) => variant.color).join(", ")}`}
             >
               {colors.slice(0, MAX_SWATCHES).map((variant) => (
                 <span
                   key={variant.color}
-                  className="size-3 rounded-full border border-black/15"
+                  className="size-2.5 rounded-full border border-black/15"
                   style={{ backgroundColor: variant.colorHex }}
                   aria-hidden="true"
                 />
@@ -76,19 +89,6 @@ export function ProductCard({ product }: { product: Product }) {
                 </span>
               ) : null}
             </div>
-          ) : null}
-        </div>
-        <div className="shrink-0 text-right">
-          <p
-            className={`text-sm font-semibold tabular-nums ${isOnSale ? "text-highlight" : "text-foreground"}`}
-          >
-            {formatPrice(product.price)}
-          </p>
-          {isOnSale && product.oldPrice ? (
-            <p className="text-xs text-muted tabular-nums line-through">
-              <span className="sr-only">Стара ціна: </span>
-              {formatPrice(product.oldPrice)}
-            </p>
           ) : null}
         </div>
       </div>

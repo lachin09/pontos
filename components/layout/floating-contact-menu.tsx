@@ -1,31 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { MessageCircle, X } from "lucide-react";
 import {
-  Camera,
-  Link2,
-  MessageCircle,
-  Music2,
-  Phone,
-  Send,
-  X,
-} from "lucide-react";
+  contactIcons as icons,
+  type ContactLink,
+} from "@/components/layout/contact-icons";
 
-export type ContactLink = {
-  kind: "phone" | "whatsapp" | "telegram" | "instagram" | "tiktok" | "custom";
-  label: string;
-  href: string;
-  detail?: string;
-};
-
-const icons = {
-  phone: Phone,
-  whatsapp: MessageCircle,
-  telegram: Send,
-  instagram: Camera,
-  tiktok: Music2,
-  custom: Link2,
-};
+export type { ContactLink };
 
 export function FloatingContactMenu({ links }: { links: ContactLink[] }) {
   const [isOpen, setIsOpen] = useState(false);

@@ -1,3 +1,4 @@
+import { compareSizes } from "@/lib/product/sizes";
 import type { Product, ProductImage, ProductVariant } from "@/types/product";
 
 /**
@@ -18,7 +19,9 @@ export function uniqueColors(variants: ProductVariant[]): ProductVariant[] {
 }
 
 export function uniqueSizes(variants: ProductVariant[]): string[] {
-  return Array.from(new Set(variants.map((variant) => variant.size)));
+  return Array.from(new Set(variants.map((variant) => variant.size))).sort(
+    compareSizes,
+  );
 }
 
 export function findVariant(

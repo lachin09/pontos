@@ -22,10 +22,13 @@ test.describe("info pages and footer", () => {
     await expect(footer).toContainText(
       `© ${new Date().getFullYear()} PONTOS. Усі права захищено.`,
     );
-    const shopNav = footer.getByRole("navigation", { name: "Магазин" });
-    for (const label of ["Каталог", "Категорії", "Новинки"]) {
+    const shopNav = footer.getByRole("navigation", { name: "Покупцям" });
+    for (const label of ["Каталог", "Новинки"]) {
       await expect(shopNav.getByRole("link", { name: label })).toBeVisible();
     }
+    await expect(
+      footer.getByRole("navigation", { name: "Колекції" }).getByRole("link"),
+    ).not.toHaveCount(0);
 
     await shopNav.getByRole("link", { name: "Каталог" }).click();
     await expect(page).toHaveURL(/\/catalog$/);
@@ -33,15 +36,10 @@ test.describe("info pages and footer", () => {
 
   test("published info pages linked from the footer open", async ({ page }) => {
     await page.goto("/");
-    await expect(
-      page
-        .getByRole("contentinfo")
-        .getByRole("navigation", { name: "Магазин" }),
-    ).toBeVisible();
     const infoNav = page
       .getByRole("contentinfo")
       .getByRole("navigation", { name: "Покупцям" });
-    const links = infoNav.getByRole("link");
+    const links = infoNav.locator('a[href^="/info/"]');
     test.skip((await links.count()) === 0, "No info pages are published");
 
     const href = await links.first().getAttribute("href");

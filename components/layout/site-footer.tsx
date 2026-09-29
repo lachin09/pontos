@@ -1,87 +1,153 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
-import { getStoreInfo } from "@/lib/data/storefront";
+import { contactIcons } from "@/components/layout/contact-icons";
+import { resolveContactLinks } from "@/components/layout/floating-contact-button";
+import { categoryLinks, type CategoryLink } from "@/lib/catalog/navigation";
+import {
+  getActiveCategories,
+  getContactLinks,
+  getPublishedProducts,
+  getStoreInfo,
+} from "@/lib/data/storefront";
+import { telHref } from "@/lib/utils/format";
 import {
   EMPTY_STORE_INFO,
   INFO_PAGES,
   INFO_PAGE_SLUGS,
-  type StoreInfo,
 } from "@/lib/validators/store-info";
 
-const shopLinks = [
-  { href: "/catalog", label: "Каталог" },
-  { href: "/#categories", label: "Категорії" },
-  { href: "/#new-in", label: "Новинки" },
-];
+const linkClass =
+  "w-fit text-sm text-white/60 transition-colors hover:text-white";
 
-const linkClass = "text-sm text-muted transition-colors hover:text-foreground";
+function FooterColumn({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <nav aria-label={title} className="grid content-start gap-3">
+      <p className="eyebrow mb-1">{title}</p>
+      {children}
+    </nav>
+  );
+}
 
 export async function SiteFooter() {
-  let info: StoreInfo = EMPTY_STORE_INFO;
-  try {
-    info = await getStoreInfo();
-  } catch {
-    // The footer still renders without the store information.
-  }
+  const [infoResult, contactsResult, categoriesResult, productsResult] =
+    await Promise.allSettled([
+      getStoreInfo(),
+      getContactLinks(),
+      getActiveCategories(),
+      getPublishedProducts(),
+    ]);
+  // Each part is optional; the footer renders with whatever loaded.
+  const info =
+    infoResult.status === "fulfilled" ? infoResult.value : EMPTY_STORE_INFO;
+  const socials = (
+    contactsResult.status === "fulfilled"
+      ? resolveContactLinks(contactsResult.value)
+      : []
+  ).filter((link) => link.kind !== "phone");
+  const categories: CategoryLink[] =
+    categoriesResult.status === "fulfilled" &&
+    productsResult.status === "fulfilled"
+      ? categoryLinks(categoriesResult.value, productsResult.value)
+      : [];
   const infoLinks = INFO_PAGE_SLUGS.filter((slug) =>
     info.pages[slug].trim(),
   ).map((slug) => ({ href: `/info/${slug}`, label: INFO_PAGES[slug].footer }));
   const { seller } = info;
 
   return (
-    <footer className="border-t border-border bg-surface">
-      <div className="mx-auto grid max-w-[1440px] gap-10 px-page py-12 sm:grid-cols-[1.3fr_1fr_1fr] sm:py-16">
+    <footer className="bg-ink text-white">
+      <div className="mx-auto grid max-w-[1440px] gap-12 px-page py-14 sm:grid-cols-2 sm:py-20 lg:grid-cols-[1.4fr_1fr_1fr_1.1fr]">
         <div>
           <Link
             href="/"
-            className="text-lg font-semibold tracking-[0.24em] text-foreground"
+            className="font-serif text-[1.9rem] font-medium uppercase leading-none tracking-[0.34em]"
           >
-            PONTOS<span className="text-highlight">.</span>
+            Pontos
           </Link>
-          <p className="mt-3 max-w-sm text-sm leading-6 text-muted">
-            Продумані речі для щоденного гардероба. Створені, щоб носити знову.
+          <p className="mt-4 max-w-xs font-serif text-lg italic leading-snug text-white/60">
+            Натуральна шкіра, замша та еко-хутро.
           </p>
-          {seller.phone || seller.email ? (
-            <p className="mt-4 grid gap-1 text-sm">
-              {seller.phone ? (
-                <a
-                  href={`tel:${seller.phone.replace(/[^\d+]/g, "")}`}
-                  className="w-fit hover:text-accent"
-                >
-                  {seller.phone}
-                </a>
-              ) : null}
-              {seller.email ? (
-                <a
-                  href={`mailto:${seller.email}`}
-                  className="w-fit hover:text-accent"
-                >
-                  {seller.email}
-                </a>
-              ) : null}
-            </p>
+          {socials.length > 0 ? (
+            <ul className="mt-6 flex gap-2">
+              {socials.map((link) => {
+                const Icon = contactIcons[link.kind];
+                return (
+                  <li key={link.href}>
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={link.label}
+                      className="grid size-10 place-items-center rounded-full border border-white/20 text-white/75 transition-colors hover:border-gold hover:text-gold"
+                    >
+                      <Icon size={16} aria-hidden="true" />
+                    </a>
+                  </li>
+                );
+              })}
+            </ul>
           ) : null}
         </div>
-        <nav aria-label="Магазин" className="grid content-start gap-3">
-          <p className="eyebrow">Магазин</p>
-          {shopLinks.map((link) => (
+
+        {categories.length > 0 ? (
+          <FooterColumn title="Колекції">
+            {categories.map((category) => (
+              <Link
+                key={category.slug}
+                href={`/catalog?category=${category.slug}`}
+                className={linkClass}
+              >
+                {category.name}
+              </Link>
+            ))}
+          </FooterColumn>
+        ) : null}
+
+        <FooterColumn title="Покупцям">
+          <Link href="/catalog" className={linkClass}>
+            Каталог
+          </Link>
+          <Link href="/catalog?sort=newest" className={linkClass}>
+            Новинки
+          </Link>
+          {infoLinks.map((link) => (
             <Link key={link.href} href={link.href} className={linkClass}>
               {link.label}
             </Link>
           ))}
-        </nav>
-        {infoLinks.length > 0 ? (
-          <nav aria-label="Покупцям" className="grid content-start gap-3">
-            <p className="eyebrow">Покупцям</p>
-            {infoLinks.map((link) => (
-              <Link key={link.href} href={link.href} className={linkClass}>
-                {link.label}
-              </Link>
-            ))}
-          </nav>
-        ) : null}
+        </FooterColumn>
+
+        <div className="grid content-start gap-3 text-sm">
+          <p className="eyebrow mb-1">Шоурум у Києві</p>
+          {seller.workingHours ? (
+            <p className="text-white/60">{seller.workingHours}</p>
+          ) : null}
+          {seller.phone ? (
+            <a
+              href={telHref(seller.phone)}
+              className="w-fit text-base text-white transition-colors hover:text-gold"
+            >
+              {seller.phone}
+            </a>
+          ) : null}
+          {seller.email ? (
+            <a
+              href={`mailto:${seller.email}`}
+              className="w-fit text-white/60 transition-colors hover:text-white"
+            >
+              {seller.email}
+            </a>
+          ) : null}
+        </div>
       </div>
-      <div className="border-t border-border px-page py-4">
-        <p className="mx-auto flex max-w-[1440px] flex-wrap gap-x-4 gap-y-1 text-xs text-muted">
+      <div className="border-t border-white/10 px-page py-5">
+        <p className="mx-auto flex max-w-[1440px] flex-wrap gap-x-4 gap-y-1 text-xs text-white/40">
           <span>© {new Date().getFullYear()} PONTOS. Усі права захищено.</span>
           {seller.legalName ? (
             <span>

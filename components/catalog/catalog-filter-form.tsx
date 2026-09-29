@@ -15,6 +15,7 @@ const sortOptions = [
 interface CatalogFilterFormProps {
   idPrefix: string;
   categories: { name: string; slug: string }[];
+  gender?: string;
   sizes: string[];
   colors: string[];
   category?: string;
@@ -30,6 +31,7 @@ interface CatalogFilterFormProps {
 export function CatalogFilterForm({
   idPrefix,
   categories,
+  gender,
   sizes,
   colors,
   category,
@@ -45,11 +47,14 @@ export function CatalogFilterForm({
 
   return (
     <form action="/catalog" method="get" className="grid gap-5">
+      {gender ? <input type="hidden" name="gender" value={gender} /> : null}
       <div className="flex items-center justify-between border-b border-border pb-3">
-        <h2 className="text-sm font-semibold">Фільтри</h2>
+        <h2 className="font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em]">
+          Фільтр
+        </h2>
         {selectedFiltersCount > 0 ? (
           <Link
-            href="/catalog"
+            href={gender ? `/catalog?gender=${gender}` : "/catalog"}
             className="text-xs text-muted underline underline-offset-4 hover:text-foreground"
           >
             Скинути
