@@ -262,6 +262,7 @@ function createProduct(seed: ProductSeed): Product {
     isFeatured: seed.isFeatured ?? false,
     isNew: seed.isNew ?? false,
     isSale: Boolean(seed.oldPrice && seed.oldPrice > seed.price),
+    translations: {},
     createdAt,
     updatedAt: createdAt,
   };

@@ -1,4 +1,5 @@
 import { Minus, Plus } from "lucide-react";
+import { useI18n } from "@/lib/i18n/client";
 
 const sizeClasses = {
   md: {
@@ -35,6 +36,7 @@ export function QuantityStepper({
   itemName,
   size = "lg",
 }: QuantityStepperProps) {
+  const { t } = useI18n();
   const styles = sizeClasses[size];
   const suffix = itemName ? ` ${itemName}` : "";
 
@@ -44,7 +46,7 @@ export function QuantityStepper({
     >
       <button
         type="button"
-        aria-label={`Зменшити кількість${suffix}`}
+        aria-label={`${t.quantity.decrease}${suffix}`}
         onClick={onDecrease}
         disabled={!canDecrease}
         className={`grid place-items-center text-foreground hover:text-accent disabled:opacity-40 ${styles.button}`}
@@ -52,14 +54,14 @@ export function QuantityStepper({
         <Minus size={styles.icon} aria-hidden="true" />
       </button>
       <output
-        aria-label="Кількість"
+        aria-label={t.quantity.label}
         className={`text-center text-sm tabular-nums ${styles.output}`}
       >
         {value}
       </output>
       <button
         type="button"
-        aria-label={`Збільшити кількість${suffix}`}
+        aria-label={`${t.quantity.increase}${suffix}`}
         onClick={onIncrease}
         disabled={!canIncrease}
         className={`grid place-items-center text-foreground hover:text-accent disabled:opacity-40 ${styles.button}`}

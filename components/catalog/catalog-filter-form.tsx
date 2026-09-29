@@ -4,16 +4,14 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-
-const sortOptions = [
-  { value: "featured", label: "Рекомендовані" },
-  { value: "price-asc", label: "Спочатку дешевші" },
-  { value: "price-desc", label: "Спочатку дорожчі" },
-  { value: "newest", label: "Спочатку новинки" },
-];
+import { PRODUCT_SORTS } from "@/lib/constants/product";
+import { colorName } from "@/lib/i18n/colors";
+import type { Locale } from "@/lib/i18n/config";
+import { i18nFor } from "@/lib/i18n/translator";
 
 interface CatalogFilterFormProps {
   idPrefix: string;
+  locale: Locale;
   categories: { name: string; slug: string }[];
   gender?: string;
   sizes: string[];
@@ -30,6 +28,7 @@ interface CatalogFilterFormProps {
 
 export function CatalogFilterForm({
   idPrefix,
+  locale,
   categories,
   gender,
   sizes,
@@ -44,20 +43,22 @@ export function CatalogFilterForm({
   selectedFiltersCount,
 }: CatalogFilterFormProps) {
   const id = (field: string) => `${idPrefix}-${field}`;
+  const { t, href } = i18nFor(locale);
+  const f = t.catalog.filter;
 
   return (
-    <form action="/catalog" method="get" className="grid gap-5">
+    <form action={href("/catalog")} method="get" className="grid gap-5">
       {gender ? <input type="hidden" name="gender" value={gender} /> : null}
       <div className="flex items-center justify-between border-b border-border pb-3">
         <h2 className="font-sans text-[0.7rem] font-medium uppercase tracking-[0.2em]">
-          Фільтр
+          {f.title}
         </h2>
         {selectedFiltersCount > 0 ? (
           <Link
-            href={gender ? `/catalog?gender=${gender}` : "/catalog"}
+            href={href(gender ? `/catalog?gender=${gender}` : "/catalog")}
             className="text-xs text-muted underline underline-offset-4 hover:text-foreground"
           >
-            Скинути
+            {f.reset}
           </Link>
         ) : null}
       </div>
@@ -65,8 +66,8 @@ export function CatalogFilterForm({
       <Select
         id={id("category")}
         name="category"
-        label="Категорія"
-        placeholder="Усі категорії"
+        label={f.category}
+        placeholder={f.allCategories}
         defaultValue={category ?? ""}
         options={categories.map((item) => ({
           label: item.name,
@@ -76,21 +77,24 @@ export function CatalogFilterForm({
       <Select
         id={id("size")}
         name="size"
-        label="Розмір"
-        placeholder="Усі розміри"
+        label={f.size}
+        placeholder={f.allSizes}
         defaultValue={size ?? ""}
         options={sizes.map((value) => ({ label: value, value }))}
       />
       <Select
         id={id("color")}
         name="color"
-        label="Колір"
-        placeholder="Усі кольори"
+        label={f.color}
+        placeholder={f.allColors}
         defaultValue={color ?? ""}
-        options={colors.map((value) => ({ label: value, value }))}
+        options={colors.map((value) => ({
+          label: colorName(value, locale),
+          value,
+        }))}
       />
       <fieldset className="grid gap-3">
-        <legend className="text-sm font-medium">Ціна, ₴</legend>
+        <legend className="text-sm font-medium">{f.price}</legend>
         <div className="grid grid-cols-2 gap-2">
           <Input
             id={id("min-price")}
@@ -98,9 +102,9 @@ export function CatalogFilterForm({
             type="number"
             min={0}
             inputMode="numeric"
-            placeholder="Від"
-            label={<span className="sr-only">Мінімальна ціна</span>}
-            aria-label="Мінімальна ціна"
+            placeholder={f.min}
+            label={<span className="sr-only">{f.minLabel}</span>}
+            aria-label={f.minLabel}
             defaultValue={minPrice}
           />
           <Input
@@ -109,9 +113,9 @@ export function CatalogFilterForm({
             type="number"
             min={0}
             inputMode="numeric"
-            placeholder="До"
-            label={<span className="sr-only">Максимальна ціна</span>}
-            aria-label="Максимальна ціна"
+            placeholder={f.max}
+            label={<span className="sr-only">{f.maxLabel}</span>}
+            aria-label={f.maxLabel}
             defaultValue={maxPrice}
           />
         </div>
@@ -120,20 +124,23 @@ export function CatalogFilterForm({
         id={id("availability")}
         name="availability"
         value="available"
-        label="Є в наявності"
+        label={t.catalog.inStock}
         defaultChecked={availableOnly}
       />
       <div className="border-t border-border pt-4">
         <Select
           id={id("sort")}
           name="sort"
-          label="Сортування"
-          options={sortOptions}
+          label={f.sort}
+          options={PRODUCT_SORTS.map((value) => ({
+            value,
+            label: f.sorts[value],
+          }))}
           defaultValue={sort}
         />
       </div>
       <Button type="submit" className="w-full">
-        Показати товари <ArrowRight size={15} aria-hidden="true" />
+        {f.submit} <ArrowRight size={15} aria-hidden="true" />
       </Button>
     </form>
   );

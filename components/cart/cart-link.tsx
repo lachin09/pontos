@@ -2,20 +2,24 @@
 
 import { ShoppingBag } from "lucide-react";
 import Link from "next/link";
-import { formatItemCount } from "@/lib/utils/format";
+import { useI18n } from "@/lib/i18n/client";
+import { fill } from "@/lib/i18n/dictionaries";
 import { useCartStore } from "@/stores/cart.store";
 
 export function CartLink() {
+  const { t, href, plural } = useI18n();
   const hasHydrated = useCartStore((state) => state.hasHydrated);
   const quantity = useCartStore((state) => state.getTotalQuantity());
 
   return (
     <Link
-      href="/cart"
+      href={href("/cart")}
       aria-label={
         hasHydrated && quantity > 0
-          ? `Кошик, ${formatItemCount(quantity)}`
-          : "Кошик"
+          ? fill(t.header.cartWithCount, {
+              count: `${quantity} ${plural(quantity, t.common.items)}`,
+            })
+          : t.header.cart
       }
       className="relative grid size-11 place-items-center rounded-full text-foreground transition-colors hover:bg-surface-muted"
     >

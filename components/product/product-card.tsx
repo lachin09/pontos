@@ -2,12 +2,23 @@ import { ProductPhoto } from "@/components/product/product-photo";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { discountPercent, uniqueColors } from "@/lib/product/variants";
-import { formatPrice, pluralize } from "@/lib/utils/format";
+import { colorName } from "@/lib/i18n/colors";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
+import { i18nFor } from "@/lib/i18n/translator";
+import { formatPrice } from "@/lib/utils/format";
 import type { Product } from "@/types/product";
 
 const MAX_SWATCHES = 5;
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({
+  product,
+  locale = DEFAULT_LOCALE,
+}: {
+  product: Product;
+  /** Pass the page language; the product text should already be localized. */
+  locale?: Locale;
+}) {
+  const { t, href, plural } = i18nFor(locale);
   const image = product.images[0];
   const alternateImage = product.images[1];
   const colors = uniqueColors(product.variants);
@@ -39,17 +50,17 @@ export function ProductCard({ product }: { product: Product }) {
         <span className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5 sm:left-3 sm:top-3">
           {isOnSale ? <Badge variant="sale">−{discount}%</Badge> : null}
           {!product.isAvailable ? (
-            <Badge variant="neutral">Немає в наявності</Badge>
+            <Badge variant="neutral">{t.product.outOfStock}</Badge>
           ) : null}
           {product.isNew && product.isAvailable ? (
-            <Badge variant="accent">Новинка</Badge>
+            <Badge variant="accent">{t.product.badgeNew}</Badge>
           ) : null}
         </span>
       </div>
       <div className="pt-3.5">
         <h3 className="line-clamp-2 font-serif text-[1.05rem] leading-snug text-foreground sm:text-[1.15rem]">
           <Link
-            href={`/product/${product.slug}`}
+            href={href(`/product/${product.slug}`)}
             className="outline-none transition-colors after:absolute after:inset-0 after:rounded-[var(--radius-card)] group-hover:text-gold"
           >
             {product.name}
@@ -59,7 +70,7 @@ export function ProductCard({ product }: { product: Product }) {
           <p className="flex items-baseline gap-2 tabular-nums">
             {isOnSale && product.oldPrice ? (
               <span className="text-xs text-muted line-through">
-                <span className="sr-only">Стара ціна: </span>
+                <span className="sr-only">{t.product.oldPrice}</span>
                 {formatPrice(product.oldPrice)}
               </span>
             ) : null}
@@ -73,7 +84,7 @@ export function ProductCard({ product }: { product: Product }) {
             <div
               role="img"
               className="flex items-center gap-1.5"
-              aria-label={`${colors.length} ${pluralize(colors.length, ["колір", "кольори", "кольорів"])}: ${colors.map((variant) => variant.color).join(", ")}`}
+              aria-label={`${colors.length} ${plural(colors.length, t.common.colors)}: ${colors.map((variant) => colorName(variant.color, locale)).join(", ")}`}
             >
               {colors.slice(0, MAX_SWATCHES).map((variant) => (
                 <span

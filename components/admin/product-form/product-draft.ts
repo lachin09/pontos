@@ -1,3 +1,9 @@
+import {
+  CONTENT_LOCALES,
+  PRODUCT_TEXT_FIELDS,
+  type Translations,
+  type ProductTextField,
+} from "@/lib/i18n/content";
 import type { AdminProductInput } from "@/lib/validators/admin-product";
 import type {
   ProductCategoryOption,
@@ -6,6 +12,36 @@ import type {
 } from "@/components/admin/product-form/types";
 
 /** Pure helpers for creating product drafts and turning them into API input. */
+
+/** Editable RU/EN fields, filled from what is saved (missing = empty). */
+export function translationsDraft(
+  saved: Translations<ProductTextField> = {},
+): ProductDraft["translations"] {
+  const draft = {} as ProductDraft["translations"];
+  for (const locale of CONTENT_LOCALES) {
+    draft[locale] = Object.fromEntries(
+      PRODUCT_TEXT_FIELDS.map((field) => [field, saved[locale]?.[field] ?? ""]),
+    ) as Record<ProductTextField, string>;
+  }
+  return draft;
+}
+
+/** Drops empty fields so the storefront falls back to Ukrainian for them. */
+function translationsInput(
+  draft: ProductDraft["translations"],
+): AdminProductInput["translations"] {
+  const input: AdminProductInput["translations"] = {};
+  for (const locale of CONTENT_LOCALES) {
+    const fields = Object.fromEntries(
+      PRODUCT_TEXT_FIELDS.map((field) => [
+        field,
+        draft[locale][field].trim(),
+      ]).filter(([, value]) => value),
+    );
+    if (Object.keys(fields).length > 0) input[locale] = fields;
+  }
+  return input;
+}
 
 export function newVariant(price = ""): ProductVariantDraft {
   return {
@@ -36,6 +72,7 @@ export function initialDraft(
     is_featured: false,
     is_new: false,
     is_sale: false,
+    translations: translationsDraft(),
     variants: [newVariant()],
   };
 }
@@ -55,6 +92,7 @@ export function toProductInput(draft: ProductDraft): AdminProductInput {
     is_featured: draft.is_featured,
     is_new: draft.is_new,
     is_sale: draft.is_sale,
+    translations: translationsInput(draft.translations),
     variants: draft.variants.map((variant) => ({
       ...(variant.id ? { id: variant.id } : {}),
       sku: variant.sku.trim(),

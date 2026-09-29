@@ -1,37 +1,27 @@
 "use client";
 
+import { useMemo } from "react";
 import { useFormContext, useWatch } from "react-hook-form";
 import { FormSection } from "@/components/checkout/form-section";
 import { validateField } from "@/components/checkout/field-validation";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { DELIVERY_COUNTRIES } from "@/lib/constants/countries";
-import { DELIVERY_METHODS, type DeliveryMethod } from "@/lib/constants/order";
-import { DELIVERY_METHOD_LABELS } from "@/lib/constants/order-labels";
+import { deliveryCountries } from "@/lib/constants/countries";
+import { DELIVERY_METHODS } from "@/lib/constants/order";
+import { useI18n } from "@/lib/i18n/client";
 import type { CheckoutData } from "@/lib/validators/checkout";
 
-const countryOptions = DELIVERY_COUNTRIES.map(({ code, name }) => ({
-  value: code,
-  label: name,
-}));
-
-/** What to type in the address field for each carrier. */
-const ADDRESS_FIELD: Record<DeliveryMethod, { label: string; hint: string }> = {
-  nova_poshta: {
-    label: "Відділення, поштомат або адреса",
-    hint: "Наприклад: Відділення №12 або вул. Хрещатик, 1, кв. 5",
-  },
-  ukrposhta: {
-    label: "Відділення або адреса",
-    hint: "Наприклад: Відділення 01001 або вул. Хрещатик, 1, кв. 5",
-  },
-  courier: {
-    label: "Адреса доставки",
-    hint: "Вулиця, будинок, квартира, під’їзд",
-  },
-};
-
 export function DeliverySection() {
+  const { t, locale } = useI18n();
+  const c = t.checkout;
+  const countryOptions = useMemo(
+    () =>
+      deliveryCountries(locale).map(({ code, name }) => ({
+        value: code,
+        label: name,
+      })),
+    [locale],
+  );
   const {
     register,
     control,
@@ -43,14 +33,13 @@ export function DeliverySection() {
     name: ["deliveryCountryCode", "deliveryMethod"],
   });
   const isInternational = countryCode !== "UA";
-  const addressField =
-    ADDRESS_FIELD[deliveryMethod] ?? ADDRESS_FIELD.nova_poshta;
+  const addressField = c.address[deliveryMethod] ?? c.address.nova_poshta;
 
   return (
-    <FormSection id="delivery-heading" step={2} title="Доставка">
+    <FormSection id="delivery-heading" step={2} title={c.delivery}>
       <Select
         id="deliveryCountryCode"
-        label="Країна доставки"
+        label={c.country}
         options={countryOptions}
         {...register("deliveryCountryCode", {
           onChange: (event) => {
@@ -65,31 +54,31 @@ export function DeliverySection() {
       />
       <Select
         id="deliveryMethod"
-        label="Спосіб доставки"
+        label={c.method}
         options={(isInternational
           ? (["nova_poshta"] as const)
           : DELIVERY_METHODS
-        ).map((value) => ({ value, label: DELIVERY_METHOD_LABELS[value] }))}
+        ).map((value) => ({ value, label: c.deliveryMethods[value] }))}
         error={errors.deliveryMethod?.message}
         {...register("deliveryMethod", {
-          validate: validateField("deliveryMethod"),
+          validate: validateField("deliveryMethod", locale),
         })}
       />
       <Input
         id="city"
-        label="Місто"
+        label={c.city}
         autoComplete="address-level2"
         error={errors.city?.message}
-        {...register("city", { validate: validateField("city") })}
+        {...register("city", { validate: validateField("city", locale) })}
       />
       {isInternational ? (
         <Input
           id="deliveryPostalCode"
-          label="Поштовий індекс"
+          label={c.postalCode}
           autoComplete="postal-code"
           error={errors.deliveryPostalCode?.message}
           {...register("deliveryPostalCode", {
-            validate: validateField("deliveryPostalCode"),
+            validate: validateField("deliveryPostalCode", locale),
           })}
         />
       ) : null}
@@ -101,14 +90,13 @@ export function DeliverySection() {
           autoComplete="street-address"
           error={errors.deliveryAddress?.message}
           {...register("deliveryAddress", {
-            validate: validateField("deliveryAddress"),
+            validate: validateField("deliveryAddress", locale),
           })}
         />
       </div>
       {isInternational ? (
         <p className="text-xs text-muted sm:col-span-2">
-          Для міжнародних адрес ми перевіримо доступність маршруту та вартість
-          доставки після отримання замовлення.
+          {c.internationalNote}
         </p>
       ) : null}
     </FormSection>

@@ -1,3 +1,5 @@
+import type { ProductTextField, Translations } from "@/lib/i18n/content";
+
 export interface ProductImage {
   id: string;
   productId: string;
@@ -38,6 +40,8 @@ export interface Product {
   isFeatured: boolean;
   isNew: boolean;
   isSale: boolean;
+  /** Russian / English text; Ukrainian is in the fields above. */
+  translations: Translations<ProductTextField>;
   createdAt: string;
   updatedAt: string;
 }

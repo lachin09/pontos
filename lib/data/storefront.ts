@@ -7,14 +7,15 @@ import {
   productService,
 } from "@/lib/server/storefront-services";
 
-// Storefront reads are cached across requests and invalidated by tag from the
+// Storefront reads are cached across requests (keys carry a version so a
+// deploy that changes the cached shape never reads the old entries) and invalidated by tag from the
 // admin routes (see lib/data/revalidate.ts). The time-based fallback covers
 // changes made directly in the Supabase dashboard.
 const FALLBACK_REVALIDATE_SECONDS = 300;
 
 export const getPublishedProducts = unstable_cache(
   () => productService.listProducts(),
-  ["storefront:products:list"],
+  ["storefront:products:list:v2"],
   { tags: [CACHE_TAGS.products], revalidate: FALLBACK_REVALIDATE_SECONDS },
 );
 
@@ -22,7 +23,7 @@ export const getPublishedProducts = unstable_cache(
 export const getPublishedProductBySlug = cache(
   unstable_cache(
     (slug: string) => productService.getProductBySlug(slug),
-    ["storefront:products:by-slug"],
+    ["storefront:products:by-slug:v2"],
     { tags: [CACHE_TAGS.products], revalidate: FALLBACK_REVALIDATE_SECONDS },
   ),
 );
@@ -30,13 +31,13 @@ export const getPublishedProductBySlug = cache(
 export const getRelatedProducts = unstable_cache(
   (categoryId: string, excludeId: string) =>
     productService.listRelatedProducts(categoryId, excludeId, 4),
-  ["storefront:products:related"],
+  ["storefront:products:related:v2"],
   { tags: [CACHE_TAGS.products], revalidate: FALLBACK_REVALIDATE_SECONDS },
 );
 
 export const getActiveCategories = unstable_cache(
   () => categoryService.listActiveCategories(),
-  ["storefront:categories:active"],
+  ["storefront:categories:active:v2"],
   { tags: [CACHE_TAGS.categories], revalidate: FALLBACK_REVALIDATE_SECONDS },
 );
 

@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { PRODUCT_TEXT_FIELDS, parseTranslations } from "@/lib/i18n/content";
 import { conflict, badRequest, notFound } from "@/lib/errors";
 import type { Database } from "@/lib/supabase/database.types";
 import { PG, translateDbError } from "@/lib/supabase/db-error";
@@ -17,7 +18,7 @@ type ProductWithRelations = Tables["products"]["Row"] & {
 };
 
 const detailsSelection =
-  "id, category_id, name, slug, description, composition, care_instructions, price, old_price, is_published, is_available, is_featured, is_new, is_sale, product_images(id, product_id, storage_path, alt, color, sort_order, created_at), product_variants(id, product_id, sku, size, color, color_hex, price, stock, is_available, created_at, updated_at)";
+  "id, category_id, name, slug, description, composition, care_instructions, price, old_price, is_published, is_available, is_featured, is_new, is_sale, translations, product_images(id, product_id, storage_path, alt, color, sort_order, created_at), product_variants(id, product_id, sku, size, color, color_hex, price, stock, is_available, created_at, updated_at)";
 
 function toDetails(
   row: ProductWithRelations,
@@ -38,6 +39,7 @@ function toDetails(
     isFeatured: row.is_featured,
     isNew: row.is_new,
     isSale: row.is_sale,
+    translations: parseTranslations(row.translations, PRODUCT_TEXT_FIELDS),
     images: row.product_images
       .toSorted((a, b) => a.sort_order - b.sort_order)
       .map((image) => ({

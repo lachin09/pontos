@@ -1,3 +1,5 @@
+import type { ContentLocale, ProductTextField } from "@/lib/i18n/content";
+
 export interface ProductCategoryOption {
   id: string;
   name: string;
@@ -43,5 +45,7 @@ export interface ProductDraft {
   is_featured: boolean;
   is_new: boolean;
   is_sale: boolean;
+  /** Russian and English text as typed; empty strings mean "use Ukrainian". */
+  translations: Record<ContentLocale, Record<ProductTextField, string>>;
   variants: ProductVariantDraft[];
 }

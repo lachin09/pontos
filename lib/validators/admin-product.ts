@@ -2,6 +2,16 @@ import { z } from "zod";
 
 const money = z.number().finite().min(0).max(99999999.99);
 
+/** Russian / English text; empty fields fall back to Ukrainian. */
+const productText = z
+  .object({
+    name: z.string().trim().max(200),
+    description: z.string().trim().max(10000),
+    composition: z.string().trim().max(2000),
+    careInstructions: z.string().trim().max(2000),
+  })
+  .partial();
+
 const variantSchema = z.object({
   id: z.string().uuid().optional(),
   sku: z.string().trim().min(1).max(80),
@@ -33,6 +43,9 @@ export const adminProductSchema = z
     is_featured: z.boolean(),
     is_new: z.boolean(),
     is_sale: z.boolean(),
+    translations: z
+      .object({ ru: productText.optional(), en: productText.optional() })
+      .default({}),
     variants: z.array(variantSchema).min(1).max(100),
   })
   .superRefine((product, ctx) => {

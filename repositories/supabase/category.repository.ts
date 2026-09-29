@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
+import { CATEGORY_TEXT_FIELDS, parseTranslations } from "@/lib/i18n/content";
 import type { Category } from "@/types/category";
 import { badRequest, conflict } from "@/lib/errors";
 import { PG, translateDbError } from "@/lib/supabase/db-error";
@@ -12,7 +13,7 @@ import type {
 type CategoryRow = Database["public"]["Tables"]["categories"]["Row"];
 
 const categoryColumns =
-  "id, name, slug, description, image_url, sort_order, is_active, created_at, updated_at";
+  "id, name, slug, description, image_url, sort_order, is_active, translations, created_at, updated_at";
 
 function toCategory(
   row: CategoryRow,
@@ -32,6 +33,7 @@ function toCategory(
     imageUrl,
     sortOrder: row.sort_order,
     isActive: row.is_active,
+    translations: parseTranslations(row.translations, CATEGORY_TEXT_FIELDS),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

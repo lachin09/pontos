@@ -4,6 +4,7 @@ import { X } from "lucide-react";
 import { useId, useRef, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useDialogBehavior } from "@/components/ui/use-dialog-behavior";
+import { useI18n } from "@/lib/i18n/client";
 
 export interface DrawerProps {
   open: boolean;
@@ -20,6 +21,7 @@ export function Drawer({
   children,
   side = "right",
 }: DrawerProps) {
+  const { t } = useI18n();
   const titleId = useId();
   const panelRef = useRef<HTMLElement | null>(null);
   useDialogBehavior(open, panelRef, onClose);
@@ -57,7 +59,7 @@ export function Drawer({
             type="button"
             variant="ghost"
             size="sm"
-            aria-label="Закрити"
+            aria-label={t.common.close}
             onClick={onClose}
             className="size-9 min-h-9 px-0"
           >

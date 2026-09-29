@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { buttonClasses } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n/client";
+import { fill } from "@/lib/i18n/dictionaries";
 
 export interface HeroSlide {
   id: string;
@@ -24,6 +26,8 @@ const SLIDE_MS = 6000;
 const SWIPE_PX = 40;
 
 export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
+  const { t, href } = useI18n();
+  const s = t.home.slider;
   const [active, setActive] = useState(0);
   const [paused, setPaused] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -57,8 +61,8 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
 
   return (
     <section
-      aria-roledescription="карусель"
-      aria-label="Обрані моделі"
+      aria-roledescription={s.carousel}
+      aria-label={s.label}
       className="relative isolate overflow-hidden bg-ink text-white"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
@@ -87,8 +91,12 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
             <div
               key={slide.id}
               role="group"
-              aria-roledescription="слайд"
-              aria-label={`${index + 1} з ${count}: ${slide.name}`}
+              aria-roledescription={s.slide}
+              aria-label={fill(s.slideLabel, {
+                index: index + 1,
+                total: count,
+                name: slide.name,
+              })}
               aria-hidden={!isActive}
               className={`absolute inset-0 transition-opacity duration-1000 ease-out ${isActive ? "opacity-100" : "opacity-0"}`}
             >
@@ -122,26 +130,24 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
             <div className="max-w-xl">
               <p className="eyebrow flex items-center gap-3 text-gold">
                 <span className="h-px w-10 bg-gold/70" aria-hidden="true" />
-                Натуральна шкіра · Замша · Хутро
+                {s.eyebrow}
               </p>
               <h1 className="mt-4 text-[clamp(3.25rem,8vw,7rem)] leading-[0.92] text-white">
-                Шкіра та хутро
+                {s.title}
               </h1>
               <p className="mt-5 hidden max-w-md text-sm leading-7 text-white/75 sm:block sm:text-base">
-                Куртки, дублянки та пальта з натуральної шкіри, замші та хутра,
-                а також жіночі еко-шуби — для холодного сезону й щоденного
-                міста.
+                {s.text}
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8">
                 <Link
-                  href="/catalog"
+                  href={href("/catalog")}
                   className={buttonClasses({
                     size: "lg",
                     className:
                       "group/cta bg-white text-ink hover:bg-gold hover:text-white",
                   })}
                 >
-                  Переглянути колекцію
+                  {s.cta}
                   <ArrowRight
                     size={16}
                     className="transition-transform group-hover/cta:translate-x-0.5"
@@ -149,7 +155,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                   />
                 </Link>
                 <Link
-                  href="/catalog?sort=newest"
+                  href={href("/catalog?sort=newest")}
                   className={buttonClasses({
                     variant: "outline",
                     size: "lg",
@@ -157,7 +163,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                       "border-white/40 text-white hover:border-white hover:bg-white/10",
                   })}
                 >
-                  Новинки
+                  {s.newIn}
                 </Link>
               </div>
             </div>
@@ -173,7 +179,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               className="group/model hidden min-w-0 animate-fade-in sm:block"
             >
               <span className="block text-[0.6rem] uppercase tracking-[0.22em] text-white/55">
-                На фото
+                {s.onPhoto}
               </span>
               <span className="mt-1 block truncate font-serif text-xl text-white transition-colors group-hover/model:text-gold">
                 {current.name}
@@ -195,7 +201,10 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                     <button
                       key={slide.id}
                       type="button"
-                      aria-label={`Показати слайд ${index + 1}: ${slide.name}`}
+                      aria-label={fill(s.showSlide, {
+                        index: index + 1,
+                        name: slide.name,
+                      })}
                       aria-current={index === active ? "true" : undefined}
                       onClick={() => go(index)}
                       className="group/dot relative grid h-8 w-7 place-items-center sm:w-10"
@@ -219,7 +228,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                 <div className="flex items-center gap-1">
                   <button
                     type="button"
-                    aria-label="Попередній слайд"
+                    aria-label={s.previous}
                     onClick={() => go(active - 1)}
                     className="hidden size-10 place-items-center rounded-full border border-white/30 transition-colors hover:border-white hover:bg-white/10 sm:grid"
                   >
@@ -227,7 +236,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                   </button>
                   <button
                     type="button"
-                    aria-label="Наступний слайд"
+                    aria-label={s.next}
                     onClick={() => go(active + 1)}
                     className="hidden size-10 place-items-center rounded-full border border-white/30 transition-colors hover:border-white hover:bg-white/10 sm:grid"
                   >
@@ -236,9 +245,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                   {!reducedMotion ? (
                     <button
                       type="button"
-                      aria-label={
-                        paused ? "Продовжити показ" : "Призупинити показ"
-                      }
+                      aria-label={paused ? s.resume : s.pause}
                       aria-pressed={paused}
                       onClick={() => setPaused((value) => !value)}
                       className="grid size-10 place-items-center rounded-full text-white/70 transition-colors hover:text-white"
@@ -257,7 +264,11 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
         </div>
       </div>
       <p className="sr-only" aria-live={playing ? "off" : "polite"}>
-        Слайд {active + 1} з {count}: {current.name}
+        {fill(s.status, {
+          index: active + 1,
+          total: count,
+          name: current.name,
+        })}
       </p>
     </section>
   );

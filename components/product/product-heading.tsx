@@ -1,4 +1,6 @@
 import { Badge } from "@/components/ui/badge";
+import { useI18n } from "@/lib/i18n/client";
+import { fill } from "@/lib/i18n/dictionaries";
 import { formatPrice } from "@/lib/utils/format";
 
 export function ProductHeading({
@@ -16,13 +18,16 @@ export function ProductHeading({
   isNew: boolean;
   isSale: boolean;
 }) {
+  const { t } = useI18n();
   const showOldPrice = oldPrice !== null && oldPrice > 0 && discount > 0;
   return (
     <div>
       <div className="flex flex-wrap items-center gap-2">
-        {isNew ? <Badge variant="accent">Новинка</Badge> : null}
+        {isNew ? <Badge variant="accent">{t.product.badgeNew}</Badge> : null}
         {isSale && discount > 0 ? (
-          <Badge variant="sale">Знижка −{discount}%</Badge>
+          <Badge variant="sale">
+            {fill(t.product.badgeSale, { percent: discount })}
+          </Badge>
         ) : null}
       </div>
       <h1 className="mt-3 text-[2rem] leading-[1.1] sm:text-[2.6rem]">
@@ -37,11 +42,13 @@ export function ProductHeading({
         {showOldPrice ? (
           <>
             <span className="text-sm text-muted tabular-nums line-through">
-              <span className="sr-only">Стара ціна: </span>
+              <span className="sr-only">{t.product.oldPrice}</span>
               {formatPrice(oldPrice)}
             </span>
             <span className="text-xs font-medium text-accent">
-              Економія {formatPrice(oldPrice - price)}
+              {fill(t.product.saving, {
+                amount: formatPrice(oldPrice - price),
+              })}
             </span>
           </>
         ) : null}

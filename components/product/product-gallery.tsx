@@ -4,6 +4,8 @@ import Image from "next/image";
 import { useMemo, useRef, useState } from "react";
 import { useProductColor } from "@/components/product/product-color-context";
 import { ProductPhoto } from "@/components/product/product-photo";
+import { useI18n } from "@/lib/i18n/client";
+import { fill } from "@/lib/i18n/dictionaries";
 import { imagesForColor } from "@/lib/product/variants";
 import type { ProductImage } from "@/types/product";
 
@@ -14,6 +16,7 @@ export function ProductGallery({
   images: ProductImage[];
   productName: string;
 }) {
+  const { t } = useI18n();
   const { selectedColor } = useProductColor();
   const [selectedColorState, setSelectedColorState] = useState(selectedColor);
   const [activeIndex, setActiveIndex] = useState(0);
@@ -34,7 +37,7 @@ export function ProductGallery({
   if (colorImages.length === 0) {
     return (
       <div className="grid aspect-[4/5] place-items-center bg-surface-muted text-sm text-muted sm:rounded-[var(--radius-card)]">
-        Фото товару незабаром з’явиться
+        {t.product.photoSoon}
       </div>
     );
   }
@@ -56,7 +59,7 @@ export function ProductGallery({
           ref={scrollerRef}
           onScroll={handleScroll}
           className="scrollbar-none flex snap-x snap-mandatory overflow-x-auto overscroll-x-contain"
-          aria-label={`Фото товару ${productName}`}
+          aria-label={fill(t.product.photos, { name: productName })}
           role="region"
           tabIndex={0}
         >
@@ -67,7 +70,13 @@ export function ProductGallery({
             >
               <ProductPhoto
                 src={image.url}
-                alt={image.alt || `${productName}, фото ${index + 1}`}
+                alt={
+                  image.alt ||
+                  fill(t.product.photoAlt, {
+                    name: productName,
+                    index: index + 1,
+                  })
+                }
                 fetchPriority={index === 0 ? "high" : "auto"}
                 sizes="100vw"
               />
@@ -101,7 +110,10 @@ export function ProductGallery({
             <button
               key={image.id}
               type="button"
-              aria-label={`Показати фото ${index + 1} товару ${productName}`}
+              aria-label={fill(t.product.showPhoto, {
+                index: index + 1,
+                name: productName,
+              })}
               aria-pressed={index === activeIndex}
               onClick={() => setActiveIndex(index)}
               onMouseEnter={() => setActiveIndex(index)}
@@ -127,7 +139,10 @@ export function ProductGallery({
             className="animate-fade-in"
           />
           <p className="sr-only" aria-live="polite">
-            Фото {activeIndex + 1} з {colorImages.length}
+            {fill(t.product.photoOf, {
+              index: activeIndex + 1,
+              total: colorImages.length,
+            })}
           </p>
         </div>
       </div>

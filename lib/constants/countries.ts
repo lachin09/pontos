@@ -3,12 +3,27 @@ const countryCodes =
     " ",
   );
 
-const names = new Intl.DisplayNames(["uk"], { type: "region" });
+const displayNames = new Map<string, Intl.DisplayNames>();
 
-export const DELIVERY_COUNTRIES = countryCodes
-  .map((code) => ({ code, name: names.of(code) ?? code }))
-  .sort((left, right) => left.name.localeCompare(right.name, "uk"));
+function regionNames(locale: string) {
+  let names = displayNames.get(locale);
+  if (!names) {
+    names = new Intl.DisplayNames([locale], { type: "region" });
+    displayNames.set(locale, names);
+  }
+  return names;
+}
 
-export function getCountryName(code: string) {
-  return names.of(code) ?? code;
+/** Delivery countries with names in `locale`, sorted for that language. */
+export function deliveryCountries(locale = "uk") {
+  const names = regionNames(locale);
+  return countryCodes
+    .map((code) => ({ code, name: names.of(code) ?? code }))
+    .sort((left, right) => left.name.localeCompare(right.name, locale));
+}
+
+export const DELIVERY_COUNTRIES = deliveryCountries("uk");
+
+export function getCountryName(code: string, locale = "uk") {
+  return regionNames(locale).of(code) ?? code;
 }

@@ -1,5 +1,6 @@
 import { ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n/client";
 import { formatPrice } from "@/lib/utils/format";
 
 /** Phone-only bar that keeps the buy action in reach while scrolling. */
@@ -20,6 +21,7 @@ export function StickyBuyBar({
   onChooseSize: () => void;
   onAddToCart: () => void;
 }) {
+  const { t } = useI18n();
   return (
     <div
       data-sticky-bar={visible ? "visible" : "hidden"}
@@ -36,7 +38,7 @@ export function StickyBuyBar({
         </div>
         {needsSizeChoice ? (
           <Button type="button" className="shrink-0" onClick={onChooseSize}>
-            Обрати розмір
+            {t.product.chooseSize}
           </Button>
         ) : (
           <Button
@@ -46,7 +48,7 @@ export function StickyBuyBar({
             disabled={!canAddToCart}
           >
             <ShoppingBag size={17} aria-hidden="true" />
-            {canAddToCart ? "У кошик" : "Немає"}
+            {canAddToCart ? t.product.toCartShort : t.product.none}
           </Button>
         )}
       </div>

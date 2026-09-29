@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState, type ReactNode } from "react";
+import { useI18n } from "@/lib/i18n/client";
 
 /**
  * Switches between product grids that the server already rendered, so the
@@ -11,6 +12,7 @@ export function ProductTabs({
 }: {
   tabs: { id: string; label: string; panel: ReactNode }[];
 }) {
+  const { t } = useI18n();
   const [active, setActive] = useState(tabs[0]?.id);
   const baseId = useId();
 
@@ -18,7 +20,7 @@ export function ProductTabs({
     <div>
       <div
         role="tablist"
-        aria-label="Добірки товарів"
+        aria-label={t.home.tabs.label}
         className="mb-10 flex justify-center gap-8"
       >
         {tabs.map((tab) => (

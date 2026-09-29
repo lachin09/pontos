@@ -62,6 +62,7 @@ export type Database = {
       };
       categories: {
         Row: {
+          translations: Json;
           created_at: string;
           description: string;
           id: string;
@@ -73,6 +74,7 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          translations?: Json;
           created_at?: string;
           description?: string;
           id?: string;
@@ -84,6 +86,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          translations?: Json;
           created_at?: string;
           description?: string;
           id?: string;
@@ -389,6 +392,7 @@ export type Database = {
       };
       products: {
         Row: {
+          translations: Json;
           care_instructions: string;
           category_id: string;
           composition: string;
@@ -407,6 +411,7 @@ export type Database = {
           updated_at: string;
         };
         Insert: {
+          translations?: Json;
           care_instructions?: string;
           category_id: string;
           composition?: string;
@@ -425,6 +430,7 @@ export type Database = {
           updated_at?: string;
         };
         Update: {
+          translations?: Json;
           care_instructions?: string;
           category_id?: string;
           composition?: string;

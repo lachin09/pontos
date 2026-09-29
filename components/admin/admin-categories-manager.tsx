@@ -6,6 +6,7 @@ import { ArrowDown, ArrowUp, ImagePlus, Pencil, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { adminCategoriesApi } from "@/lib/api/admin";
 import { ApiError, errorMessage } from "@/lib/api/client";
+import type { CategoryTextField, Translations } from "@/lib/i18n/content";
 import { slugify } from "@/lib/utils/slugify";
 
 export interface AdminCategoryRow {
@@ -16,9 +17,34 @@ export interface AdminCategoryRow {
   imageUrl: string | null;
   sortOrder: number;
   isActive: boolean;
+  translations: Translations<CategoryTextField>;
 }
 
-const emptyDraft = { name: "", slug: "", description: "", is_active: true };
+const emptyText = { name: "", description: "" };
+const emptyDraft = {
+  name: "",
+  slug: "",
+  description: "",
+  is_active: true,
+  ru: emptyText,
+  en: emptyText,
+};
+
+/** RU/EN fields as the API expects them: empty ones are left out. */
+function translationsPayload(draft: typeof emptyDraft) {
+  const result: Translations<CategoryTextField> = {};
+  for (const locale of ["ru", "en"] as const) {
+    const name = draft[locale].name.trim();
+    const description = draft[locale].description.trim();
+    if (name || description) {
+      result[locale] = {
+        ...(name ? { name } : {}),
+        ...(description ? { description } : {}),
+      };
+    }
+  }
+  return result;
+}
 
 export function AdminCategoriesManager({
   initialCategories,
@@ -71,6 +97,8 @@ export function AdminCategoriesManager({
       slug: item.slug,
       description: item.description,
       is_active: item.isActive,
+      ru: { ...emptyText, ...item.translations.ru },
+      en: { ...emptyText, ...item.translations.en },
     });
     selectFile(null);
     setRemoveImage(false);
@@ -83,7 +111,11 @@ export function AdminCategoriesManager({
     try {
       const existing = categories.find((item) => item.id === editing);
       const payload = {
-        ...draft,
+        name: draft.name,
+        slug: draft.slug,
+        description: draft.description,
+        is_active: draft.is_active,
+        translations: translationsPayload(draft),
         sort_order: existing?.sortOrder ?? categories.length,
       };
       const result =
@@ -136,6 +168,7 @@ export function AdminCategoriesManager({
           isActive: draft.is_active,
           imageUrl,
           sortOrder: payload.sort_order,
+          translations: payload.translations,
         };
         return editing === "new"
           ? [...items, row]
@@ -161,6 +194,7 @@ export function AdminCategoriesManager({
         description: item.description,
         sort_order: item.sortOrder,
         is_active: !item.isActive,
+        translations: item.translations,
       });
       setCategories((rows) =>
         rows.map((row) =>
@@ -269,6 +303,46 @@ export function AdminCategoriesManager({
                 className="min-h-28 resize-y rounded-[var(--radius-control)] border border-border bg-surface px-3.5 py-3 text-sm outline-none focus:border-focus"
               />
             </label>
+            {(["ru", "en"] as const).map((locale) => (
+              <fieldset
+                key={locale}
+                className="grid gap-3 rounded-[var(--radius-control)] border border-border p-3 text-sm sm:col-span-2 sm:grid-cols-2"
+              >
+                <legend className="px-1 text-xs text-muted">
+                  {locale === "ru" ? "Русский" : "English"} · порожнє —
+                  українською
+                </legend>
+                <label className="grid gap-1.5">
+                  Назва
+                  <input
+                    value={draft[locale].name}
+                    placeholder={draft.name}
+                    onChange={(e) =>
+                      setDraft((d) => ({
+                        ...d,
+                        [locale]: { ...d[locale], name: e.target.value },
+                      }))
+                    }
+                    maxLength={120}
+                    className="min-h-11 rounded-[var(--radius-control)] border border-border bg-surface px-3.5 text-sm outline-none focus:border-focus"
+                  />
+                </label>
+                <label className="grid gap-1.5">
+                  Опис
+                  <input
+                    value={draft[locale].description}
+                    onChange={(e) =>
+                      setDraft((d) => ({
+                        ...d,
+                        [locale]: { ...d[locale], description: e.target.value },
+                      }))
+                    }
+                    maxLength={2000}
+                    className="min-h-11 rounded-[var(--radius-control)] border border-border bg-surface px-3.5 text-sm outline-none focus:border-focus"
+                  />
+                </label>
+              </fieldset>
+            ))}
             <label className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"

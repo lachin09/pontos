@@ -1,3 +1,5 @@
+import type { CategoryTextField, Translations } from "@/lib/i18n/content";
+
 export interface Category {
   id: string;
   name: string;
@@ -6,6 +8,8 @@ export interface Category {
   imageUrl: string | null;
   sortOrder: number;
   isActive: boolean;
+  /** Russian / English text; Ukrainian is in the fields above. */
+  translations: Translations<CategoryTextField>;
   createdAt: string;
   updatedAt: string;
 }

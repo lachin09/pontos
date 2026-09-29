@@ -1,12 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/lib/supabase/database.types";
+import { PRODUCT_TEXT_FIELDS, parseTranslations } from "@/lib/i18n/content";
 import type { Product } from "@/types/product";
 import type { ProductRepository } from "@/repositories/product.repository";
 
 const productSelection = `
   id, category_id, name, slug, description, composition, care_instructions,
-  price, old_price, is_available, is_featured, is_new, is_sale, created_at,
+  price, old_price, is_available, is_featured, is_new, is_sale, translations,
+  created_at,
   updated_at,
   product_images (id, product_id, storage_path, alt, color, sort_order, created_at),
   product_variants (id, product_id, sku, size, color, color_hex, price, stock,
@@ -59,6 +61,7 @@ function toProduct(row: ProductRow, client: SupabaseClient<Database>): Product {
     isFeatured: row.is_featured,
     isNew: row.is_new,
     isSale: row.is_sale,
+    translations: parseTranslations(row.translations, PRODUCT_TEXT_FIELDS),
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

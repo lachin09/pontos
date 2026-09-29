@@ -10,8 +10,10 @@ import {
   LineSwitch,
   linksForLine,
 } from "@/components/layout/header-nav";
+import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import type { Gender } from "@/lib/catalog/gender";
 import type { CategoryLink } from "@/lib/catalog/navigation";
+import { useI18n } from "@/lib/i18n/client";
 import { telHref } from "@/lib/utils/format";
 
 const rowClass =
@@ -26,6 +28,7 @@ export function MobileNavigation({
   phone?: string;
   workingHours?: string;
 }) {
+  const { t, href } = useI18n();
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   const lines = availableLines(links);
@@ -38,24 +41,24 @@ export function MobileNavigation({
         variant="ghost"
         size="sm"
         className="size-11 min-h-11 rounded-full px-0 lg:hidden"
-        aria-label="Відкрити меню"
+        aria-label={t.header.openMenu}
         aria-expanded={open}
         onClick={() => setOpen(true)}
       >
         <Menu size={21} aria-hidden="true" />
       </Button>
-      <Drawer open={open} onClose={close} title="Меню">
+      <Drawer open={open} onClose={close} title={t.header.menu}>
         <LineSwitch
           lines={lines}
           value={line}
           onChange={setLine}
           className="mb-4"
         />
-        <nav aria-label="Мобільна навігація" className="grid">
+        <nav aria-label={t.header.mobileNav} className="grid">
           {linksForLine(links, line).map((link) => (
             <Link
               key={link.slug}
-              href={`/catalog?category=${link.slug}`}
+              href={href(`/catalog?category=${link.slug}`)}
               onClick={close}
               className={rowClass}
             >
@@ -67,21 +70,22 @@ export function MobileNavigation({
             </Link>
           ))}
           <Link
-            href="/catalog?sort=newest"
+            href={href("/catalog?sort=newest")}
             onClick={close}
             className={rowClass}
           >
-            Новинки
+            {t.header.newIn}
             <ChevronRight size={16} className="text-muted" aria-hidden="true" />
           </Link>
-          <Link href="/catalog" onClick={close} className={rowClass}>
-            Каталог
+          <Link href={href("/catalog")} onClick={close} className={rowClass}>
+            {t.header.catalog}
             <ChevronRight size={16} className="text-muted" aria-hidden="true" />
           </Link>
         </nav>
+        <LanguageSwitcher className="mt-8 text-sm tracking-[0.14em] text-muted" />
         {phone ? (
-          <div className="mt-10 border-t border-border pt-6">
-            <p className="eyebrow">Шоурум у Києві</p>
+          <div className="mt-8 border-t border-border pt-6">
+            <p className="eyebrow">{t.header.showroom}</p>
             <a
               href={telHref(phone)}
               className="mt-3 flex min-h-11 items-center gap-2 text-lg font-medium"

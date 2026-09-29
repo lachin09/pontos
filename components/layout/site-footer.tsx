@@ -9,12 +9,10 @@ import {
   getPublishedProducts,
   getStoreInfo,
 } from "@/lib/data/storefront";
+import { localizeCategory } from "@/lib/i18n/catalog";
+import { getI18n } from "@/lib/i18n/server";
 import { telHref } from "@/lib/utils/format";
-import {
-  EMPTY_STORE_INFO,
-  INFO_PAGES,
-  INFO_PAGE_SLUGS,
-} from "@/lib/validators/store-info";
+import { EMPTY_STORE_INFO, INFO_PAGE_SLUGS } from "@/lib/validators/store-info";
 
 const linkClass =
   "w-fit text-sm text-white/60 transition-colors hover:text-white";
@@ -35,6 +33,7 @@ function FooterColumn({
 }
 
 export async function SiteFooter() {
+  const { t, locale, href } = await getI18n();
   const [infoResult, contactsResult, categoriesResult, productsResult] =
     await Promise.allSettled([
       getStoreInfo(),
@@ -53,11 +52,19 @@ export async function SiteFooter() {
   const categories: CategoryLink[] =
     categoriesResult.status === "fulfilled" &&
     productsResult.status === "fulfilled"
-      ? categoryLinks(categoriesResult.value, productsResult.value)
+      ? categoryLinks(
+          categoriesResult.value.map((category) =>
+            localizeCategory(category, locale),
+          ),
+          productsResult.value,
+        )
       : [];
   const infoLinks = INFO_PAGE_SLUGS.filter((slug) =>
     info.pages[slug].trim(),
-  ).map((slug) => ({ href: `/info/${slug}`, label: INFO_PAGES[slug].footer }));
+  ).map((slug) => ({
+    href: href(`/info/${slug}`),
+    label: t.info.footer[slug],
+  }));
   const { seller } = info;
 
   return (
@@ -65,13 +72,13 @@ export async function SiteFooter() {
       <div className="mx-auto grid max-w-[1440px] gap-12 px-page py-14 sm:grid-cols-2 sm:py-20 lg:grid-cols-[1.4fr_1fr_1fr_1.1fr]">
         <div>
           <Link
-            href="/"
+            href={href("/")}
             className="font-serif text-[1.9rem] font-medium uppercase leading-none tracking-[0.34em]"
           >
             Pontos
           </Link>
           <p className="mt-4 max-w-xs font-serif text-lg italic leading-snug text-white/60">
-            Натуральна шкіра, замша та хутро.
+            {t.footer.tagline}
           </p>
           {socials.length > 0 ? (
             <ul className="mt-6 flex gap-2">
@@ -96,11 +103,11 @@ export async function SiteFooter() {
         </div>
 
         {categories.length > 0 ? (
-          <FooterColumn title="Колекції">
+          <FooterColumn title={t.footer.collections}>
             {categories.map((category) => (
               <Link
                 key={category.slug}
-                href={`/catalog?category=${category.slug}`}
+                href={href(`/catalog?category=${category.slug}`)}
                 className={linkClass}
               >
                 {category.name}
@@ -109,12 +116,12 @@ export async function SiteFooter() {
           </FooterColumn>
         ) : null}
 
-        <FooterColumn title="Покупцям">
-          <Link href="/catalog" className={linkClass}>
-            Каталог
+        <FooterColumn title={t.footer.customers}>
+          <Link href={href("/catalog")} className={linkClass}>
+            {t.header.catalog}
           </Link>
-          <Link href="/catalog?sort=newest" className={linkClass}>
-            Новинки
+          <Link href={href("/catalog?sort=newest")} className={linkClass}>
+            {t.header.newIn}
           </Link>
           {infoLinks.map((link) => (
             <Link key={link.href} href={link.href} className={linkClass}>
@@ -124,7 +131,7 @@ export async function SiteFooter() {
         </FooterColumn>
 
         <div className="grid content-start gap-3 text-sm">
-          <p className="eyebrow mb-1">Шоурум у Києві</p>
+          <p className="eyebrow mb-1">{t.footer.showroom}</p>
           {seller.workingHours ? (
             <p className="text-white/60">{seller.workingHours}</p>
           ) : null}
@@ -148,11 +155,13 @@ export async function SiteFooter() {
       </div>
       <div className="border-t border-white/10 px-page py-5">
         <p className="mx-auto flex max-w-[1440px] flex-wrap gap-x-4 gap-y-1 text-xs text-white/40">
-          <span>© {new Date().getFullYear()} PONTOS. Усі права захищено.</span>
+          <span>
+            © {new Date().getFullYear()} PONTOS. {t.footer.rights}
+          </span>
           {seller.legalName ? (
             <span>
               {seller.legalName}
-              {seller.taxId ? `, код ${seller.taxId}` : ""}
+              {seller.taxId ? `, ${t.footer.taxCode} ${seller.taxId}` : ""}
             </span>
           ) : null}
         </p>

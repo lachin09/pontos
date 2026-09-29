@@ -1,12 +1,12 @@
 import { Check } from "lucide-react";
-
-const STEPS = ["Кошик", "Дані", "Підтвердження"] as const;
+import { useI18n } from "@/lib/i18n/client";
 
 /** Progress indicator; `current` is the 0-based active step (3 = all done). */
 export function CheckoutSteps({ current }: { current: number }) {
+  const { t } = useI18n();
   return (
     <ol className="mt-5 flex items-center gap-2 text-xs sm:gap-3 sm:text-sm">
-      {STEPS.map((step, index) => {
+      {t.checkout.steps.map((step, index) => {
         const done = index < current;
         const active = index === current;
         return (

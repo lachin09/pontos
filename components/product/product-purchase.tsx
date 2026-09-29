@@ -11,11 +11,15 @@ import { Button, buttonClasses } from "@/components/ui/button";
 import { QuantityStepper } from "@/components/ui/quantity-stepper";
 import { Toast } from "@/components/ui/toast";
 import { useIsOffscreen } from "@/lib/hooks/use-is-offscreen";
+import { useI18n } from "@/lib/i18n/client";
+import { colorName } from "@/lib/i18n/colors";
+import { fill } from "@/lib/i18n/dictionaries";
 import { primaryImageUrl } from "@/lib/product/variants";
 import { useCartStore } from "@/stores/cart.store";
 import type { Product } from "@/types/product";
 
 export function ProductPurchase({ product }: { product: Product }) {
+  const { t, locale, href } = useI18n();
   const selection = useVariantSelection(product);
   const {
     selectedColor,
@@ -81,11 +85,11 @@ export function ProductPurchase({ product }: { product: Product }) {
         />
         {canAddToCart
           ? isLowStock
-            ? `Залишилось лише ${selectedVariant?.stock} шт.`
-            : "В наявності, готово до відправки"
+            ? fill(t.product.lowStock, { count: selectedVariant?.stock ?? 0 })
+            : t.product.inStock
           : selectedVariant
-            ? "Цей варіант наразі недоступний"
-            : "Оберіть доступний варіант"}
+            ? t.product.variantUnavailable
+            : t.product.chooseVariant}
       </p>
 
       <div ref={actionsRef} className="flex flex-wrap gap-3">
@@ -103,7 +107,7 @@ export function ProductPurchase({ product }: { product: Product }) {
           className="min-w-52 flex-1"
         >
           <ShoppingBag size={17} aria-hidden="true" />
-          {canAddToCart ? "Додати в кошик" : "Немає в наявності"}
+          {canAddToCart ? t.product.addToCart : t.product.outOfStock}
         </Button>
       </div>
 
@@ -114,7 +118,7 @@ export function ProductPurchase({ product }: { product: Product }) {
             className="shrink-0 text-accent"
             aria-hidden="true"
           />
-          Нова пошта, Укрпошта або кур’єр
+          {t.product.deliveryShort}
         </p>
         <p className="flex items-center gap-2 text-xs leading-5 text-muted">
           <WalletCards
@@ -122,13 +126,13 @@ export function ProductPurchase({ product }: { product: Product }) {
             className="shrink-0 text-accent"
             aria-hidden="true"
           />
-          Переказ або оплата при отриманні
+          {t.product.paymentShort}
         </p>
       </div>
 
       <StickyBuyBar
         visible={actionsOffscreen}
-        title={`${product.name}${selection.hasChosenVariant ? ` · ${selectedColor} · ${selectedSize}` : ""}`}
+        title={`${product.name}${selection.hasChosenVariant ? ` · ${colorName(selectedColor, locale)} · ${selectedSize}` : ""}`}
         price={price}
         needsSizeChoice={selection.needsSizeChoice}
         canAddToCart={canAddToCart}
@@ -142,16 +146,16 @@ export function ProductPurchase({ product }: { product: Product }) {
       />
 
       <Toast open={toastOpen} onClose={closeToast}>
-        <p className="font-medium">Додано до кошика</p>
+        <p className="font-medium">{t.product.added}</p>
         <p className="mt-0.5 text-xs text-foreground/70">
-          {product.name} · {selectedColor} · {selectedSize}
-          {quantity > 1 ? ` · ${quantity} шт.` : ""}
+          {product.name} · {colorName(selectedColor, locale)} · {selectedSize}
+          {quantity > 1 ? ` · ${quantity} ${t.common.pcs}` : ""}
         </p>
         <Link
-          href="/cart"
+          href={href("/cart")}
           className={buttonClasses({ size: "sm", className: "mt-3 w-full" })}
         >
-          Перейти до кошика <ArrowRight size={14} aria-hidden="true" />
+          {t.product.goToCart} <ArrowRight size={14} aria-hidden="true" />
         </Link>
       </Toast>
     </div>

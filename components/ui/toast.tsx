@@ -3,6 +3,7 @@
 import { X } from "lucide-react";
 import { useEffect, type ReactNode } from "react";
 import { createPortal } from "react-dom";
+import { useI18n } from "@/lib/i18n/client";
 
 export interface ToastProps {
   open: boolean;
@@ -25,6 +26,7 @@ export function Toast({
   duration = 4000,
   variant = "success",
 }: ToastProps) {
+  const { t } = useI18n();
   useEffect(() => {
     if (!open || duration <= 0) return;
     const timeout = window.setTimeout(onClose, duration);
@@ -47,7 +49,7 @@ export function Toast({
         <div className="min-w-0 flex-1 py-1">{children}</div>
         <button
           type="button"
-          aria-label="Закрити сповіщення"
+          aria-label={t.toast.close}
           onClick={onClose}
           className="grid size-8 shrink-0 place-items-center rounded-full opacity-70 transition-opacity hover:opacity-100"
         >

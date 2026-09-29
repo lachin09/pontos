@@ -1,5 +1,7 @@
 import type { ReactNode } from "react";
 import { parseRichText } from "@/components/content/rich-text";
+import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
+import { i18nFor } from "@/lib/i18n/translator";
 
 const SPEC_LINE = /^([^:]{2,30}):\s+(.+)$/;
 
@@ -12,10 +14,13 @@ const SPEC_LINE = /^([^:]{2,30}):\s+(.+)$/;
 export function ProductDescription({
   source,
   extraSpecs = [],
+  locale = DEFAULT_LOCALE,
 }: {
   source: string;
   extraSpecs?: { label: string; value: string }[];
+  locale?: Locale;
 }) {
+  const { t } = i18nFor(locale);
   const blocks = parseRichText(source);
   const specs = [...extraSpecs];
   const content: ReactNode[] = [];
@@ -35,7 +40,7 @@ export function ProductDescription({
     if (block.kind === "list") {
       content.push(
         <div key={index}>
-          <p className="eyebrow mb-3">Деталі</p>
+          <p className="eyebrow mb-3">{t.product.details}</p>
           <ul className="grid gap-2.5">
             {block.items.map((item, itemIndex) => (
               <li

@@ -9,9 +9,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Radio } from "@/components/ui/radio";
 import { Textarea } from "@/components/ui/textarea";
-import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/constants/order";
-import { PAYMENT_METHOD_LABELS } from "@/lib/constants/order-labels";
-import { checkoutSchema, type CheckoutData } from "@/lib/validators/checkout";
+import { PAYMENT_METHODS } from "@/lib/constants/order";
+import { useI18n } from "@/lib/i18n/client";
+import {
+  checkoutSchemaFor,
+  type CheckoutData,
+} from "@/lib/validators/checkout";
 
 const emptyCheckout: CheckoutData = {
   firstName: "",
@@ -26,11 +29,6 @@ const emptyCheckout: CheckoutData = {
   comment: "",
 };
 
-const PAYMENT_DESCRIPTIONS: Record<PaymentMethod, string> = {
-  bank_transfer: "Реквізити для переказу надійдуть після створення замовлення.",
-  cash_on_delivery: "Оплата під час отримання посилки.",
-};
-
 /** Collects contact, delivery and payment details; calls onValid with clean data. */
 export function CheckoutForm({
   initialData,
@@ -39,6 +37,8 @@ export function CheckoutForm({
   initialData: CheckoutData | null;
   onValid: (data: CheckoutData) => void;
 }) {
+  const { t, locale } = useI18n();
+  const c = t.checkout;
   const form = useForm<CheckoutData>({
     defaultValues: { ...emptyCheckout, ...initialData },
     mode: "onBlur",
@@ -51,7 +51,7 @@ export function CheckoutForm({
   } = form;
 
   const submit = (data: CheckoutData) => {
-    const result = checkoutSchema.safeParse(data);
+    const result = checkoutSchemaFor(locale).safeParse(data);
     if (!result.success) {
       // Cross-field rules only run here, so surface them on the matching
       // field instead of failing silently.
@@ -74,45 +74,49 @@ export function CheckoutForm({
         onSubmit={handleSubmit(submit)}
         className="order-2 grid gap-7 lg:order-1"
       >
-        <FormSection id="customer-heading" step={1} title="Контактні дані">
+        <FormSection id="customer-heading" step={1} title={c.contact}>
           <Input
             id="firstName"
-            label="Ім’я"
+            label={c.firstName}
             autoComplete="given-name"
             error={errors.firstName?.message}
-            {...register("firstName", { validate: validateField("firstName") })}
+            {...register("firstName", {
+              validate: validateField("firstName", locale),
+            })}
           />
           <Input
             id="lastName"
-            label="Прізвище"
+            label={c.lastName}
             autoComplete="family-name"
             error={errors.lastName?.message}
-            {...register("lastName", { validate: validateField("lastName") })}
+            {...register("lastName", {
+              validate: validateField("lastName", locale),
+            })}
           />
           <Input
             id="phone"
-            label="Телефон"
+            label={c.phone}
             type="tel"
             inputMode="tel"
             autoComplete="tel"
             placeholder="+380…"
             error={errors.phone?.message}
-            {...register("phone", { validate: validateField("phone") })}
+            {...register("phone", { validate: validateField("phone", locale) })}
           />
         </FormSection>
 
         <DeliverySection />
 
-        <FormSection id="payment-heading" step={3} title="Оплата" asFieldset>
+        <FormSection id="payment-heading" step={3} title={c.payment} asFieldset>
           {PAYMENT_METHODS.map((value) => (
             <Radio
               key={value}
               id={`payment-${value}`}
               value={value}
-              label={PAYMENT_METHOD_LABELS[value]}
-              description={PAYMENT_DESCRIPTIONS[value]}
+              label={c.paymentMethods[value]}
+              description={c.paymentDescriptions[value]}
               {...register("paymentMethod", {
-                validate: validateField("paymentMethod"),
+                validate: validateField("paymentMethod", locale),
               })}
             />
           ))}
@@ -126,11 +130,13 @@ export function CheckoutForm({
         <section className="rounded-[var(--radius-card)] border border-border bg-surface p-5 sm:p-6">
           <Textarea
             id="comment"
-            label="Коментар до замовлення"
-            hint="Необов’язково, до 500 символів"
+            label={c.comment}
+            hint={c.commentHint}
             maxLength={500}
             error={errors.comment?.message}
-            {...register("comment", { validate: validateField("comment") })}
+            {...register("comment", {
+              validate: validateField("comment", locale),
+            })}
           />
         </section>
 
@@ -139,15 +145,12 @@ export function CheckoutForm({
             type="submit"
             size="lg"
             loading={isSubmitting}
-            loadingLabel="Перевіряємо дані"
+            loadingLabel={c.checking}
             className="w-full sm:w-fit sm:px-10"
           >
-            Перевірити замовлення <ArrowRight size={16} aria-hidden="true" />
+            {c.review} <ArrowRight size={16} aria-hidden="true" />
           </Button>
-          <p className="text-xs text-muted">
-            На наступному кроці ви зможете перевірити все ще раз. Оплата — лише
-            після підтвердження.
-          </p>
+          <p className="text-xs text-muted">{c.reviewNote}</p>
         </div>
       </form>
     </FormProvider>

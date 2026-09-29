@@ -2,10 +2,8 @@ import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { getCountryName } from "@/lib/constants/countries";
-import {
-  DELIVERY_METHOD_LABELS,
-  PAYMENT_METHOD_LABELS,
-} from "@/lib/constants/order-labels";
+import { useI18n } from "@/lib/i18n/client";
+import { fill } from "@/lib/i18n/dictionaries";
 import { formatPrice } from "@/lib/utils/format";
 import type { CheckoutData } from "@/lib/validators/checkout";
 
@@ -13,6 +11,8 @@ import type { CheckoutData } from "@/lib/validators/checkout";
 export type PolicyLinks = { offer: boolean; privacy: boolean };
 
 function ConsentNote({ policyLinks }: { policyLinks: PolicyLinks }) {
+  const { t, href } = useI18n();
+  const c = t.checkout;
   if (!policyLinks.offer && !policyLinks.privacy) return null;
   const link = (href: string, text: string) => (
     <Link
@@ -25,13 +25,11 @@ function ConsentNote({ policyLinks }: { policyLinks: PolicyLinks }) {
   );
   return (
     <p className="mt-4 text-xs leading-5 text-muted">
-      Підтверджуючи замовлення, ви погоджуєтеся з{" "}
-      {policyLinks.offer
-        ? link("/info/offer", "умовами публічної оферти")
-        : null}
-      {policyLinks.offer && policyLinks.privacy ? " та " : null}
+      {c.consentPrefix}{" "}
+      {policyLinks.offer ? link(href("/info/offer"), c.consentOffer) : null}
+      {policyLinks.offer && policyLinks.privacy ? c.consentAnd : null}
       {policyLinks.privacy
-        ? link("/info/privacy", "політикою конфіденційності")
+        ? link(href("/info/privacy"), c.consentPrivacy)
         : null}
       .
     </p>
@@ -55,53 +53,53 @@ export function OrderReview({
   onEdit: () => void;
   policyLinks: PolicyLinks;
 }) {
+  const { t, locale } = useI18n();
+  const c = t.checkout;
   return (
     <section
       className="max-w-2xl rounded-[var(--radius-card)] border border-border bg-surface p-5 sm:p-7"
       aria-labelledby="review-heading"
     >
       <h2 id="review-heading" className="text-2xl">
-        Перевірте дані
+        {c.reviewTitle}
       </h2>
       <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">
         <div>
-          <dt className="text-muted">Покупець</dt>
+          <dt className="text-muted">{c.buyer}</dt>
           <dd className="mt-1">
             {data.firstName} {data.lastName}
           </dd>
         </div>
         <div>
-          <dt className="text-muted">Телефон</dt>
+          <dt className="text-muted">{c.phone}</dt>
           <dd className="mt-1">{data.phone}</dd>
         </div>
         <div>
-          <dt className="text-muted">Місто</dt>
+          <dt className="text-muted">{c.city}</dt>
           <dd className="mt-1">
-            {data.city}, {getCountryName(data.deliveryCountryCode)}
+            {data.city}, {getCountryName(data.deliveryCountryCode, locale)}
             {data.deliveryPostalCode ? ` · ${data.deliveryPostalCode}` : ""}
           </dd>
         </div>
         <div>
-          <dt className="text-muted">Доставка</dt>
+          <dt className="text-muted">{c.delivery}</dt>
           <dd className="mt-1">
-            {DELIVERY_METHOD_LABELS[data.deliveryMethod]} ·{" "}
-            {data.deliveryAddress}
+            {c.deliveryMethods[data.deliveryMethod]} · {data.deliveryAddress}
           </dd>
         </div>
         <div>
-          <dt className="text-muted">Оплата</dt>
-          <dd className="mt-1">{PAYMENT_METHOD_LABELS[data.paymentMethod]}</dd>
+          <dt className="text-muted">{c.payment}</dt>
+          <dd className="mt-1">{c.paymentMethods[data.paymentMethod]}</dd>
         </div>
         {data.comment ? (
           <div className="sm:col-span-2">
-            <dt className="text-muted">Коментар</dt>
+            <dt className="text-muted">{c.commentLabel}</dt>
             <dd className="mt-1">{data.comment}</dd>
           </div>
         ) : null}
       </dl>
       <p className="mt-5 rounded-md bg-surface-muted p-3 text-sm text-muted">
-        Доставка оплачується окремо перевізнику під час отримання. Підсумкова
-        вартість доставки залежить від тарифу перевізника.
+        {c.deliveryNote}
       </p>
       {error ? (
         <p className="mt-4 text-sm text-danger" role="alert">
@@ -113,10 +111,10 @@ export function OrderReview({
           type="button"
           size="lg"
           loading={placing}
-          loadingLabel="Оформлюємо замовлення"
+          loadingLabel={c.placing}
           onClick={onConfirm}
         >
-          Підтвердити замовлення · {formatPrice(subtotal)}
+          {fill(c.confirm, { total: formatPrice(subtotal) })}
         </Button>
         <Button
           type="button"
@@ -125,7 +123,7 @@ export function OrderReview({
           disabled={placing}
           onClick={onEdit}
         >
-          <ArrowLeft size={16} aria-hidden="true" /> Змінити дані
+          <ArrowLeft size={16} aria-hidden="true" /> {c.edit}
         </Button>
       </div>
       <ConsentNote policyLinks={policyLinks} />

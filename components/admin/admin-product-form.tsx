@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { adminProductsApi } from "@/lib/api/admin";
 import { errorMessage } from "@/lib/api/client";
 import { ProductDetailsSection } from "@/components/admin/product-form/product-details-section";
+import { ProductTranslationsSection } from "@/components/admin/product-form/product-translations-section";
 import { ProductImagesSection } from "@/components/admin/product-form/product-images-section";
 import { ProductVariantsSection } from "@/components/admin/product-form/product-variants-section";
 import {
@@ -121,6 +122,8 @@ export function AdminProductForm({
         onPriceChange={setPrice}
         onSlugBlur={markSlugTouched}
       />
+
+      <ProductTranslationsSection draft={draft} update={update} />
 
       <ProductVariantsSection
         variants={draft.variants}

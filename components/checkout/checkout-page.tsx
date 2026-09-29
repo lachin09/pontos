@@ -16,6 +16,7 @@ import {
 } from "@/components/checkout/order-summary";
 import { usePlaceOrder } from "@/components/checkout/use-place-order";
 import { buttonClasses } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n/client";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { CheckoutData } from "@/lib/validators/checkout";
 import { useCartStore } from "@/stores/cart.store";
@@ -25,6 +26,7 @@ const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
 
 /** Sequences checkout: details form → review → confirmation. */
 export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
+  const { t, href } = useI18n();
   const items = useCartStore((state) => state.items);
   const hasHydrated = useCartStore((state) => state.hasHydrated);
   const subtotal = useCartStore((state) => state.getSubtotal());
@@ -45,7 +47,7 @@ export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
     return (
       <div
         className="mx-auto min-h-[60vh] max-w-[1440px] px-page py-10"
-        aria-label="Завантаження оформлення"
+        aria-label={t.checkout.loading}
       >
         <Skeleton className="h-9 w-64" />
         <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_360px]">
@@ -64,15 +66,13 @@ export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
           <span className="mx-auto grid size-16 place-items-center rounded-full bg-surface-muted text-accent">
             <ShoppingBag size={26} aria-hidden="true" />
           </span>
-          <h1 className="mt-6 text-3xl sm:text-4xl">Кошик порожній</h1>
-          <p className="mt-3 text-sm text-muted">
-            Додайте товари, щоб перейти до оформлення.
-          </p>
+          <h1 className="mt-6 text-3xl sm:text-4xl">{t.checkout.emptyTitle}</h1>
+          <p className="mt-3 text-sm text-muted">{t.checkout.emptyText}</p>
           <Link
             className={buttonClasses({ size: "lg", className: "mt-7" })}
-            href="/catalog"
+            href={href("/catalog")}
           >
-            До каталогу <ArrowRight size={16} aria-hidden="true" />
+            {t.common.toCatalog} <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
       </div>
@@ -96,9 +96,9 @@ export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
   return (
     <div className="mx-auto min-h-[60vh] max-w-[1440px] px-page py-8 sm:py-12">
       <div className="mb-6 border-b border-border pb-6 sm:mb-8">
-        <p className="eyebrow">PONTOS · essentials</p>
+        <p className="eyebrow">PONTOS</p>
         <h1 className="mt-2 text-4xl leading-tight sm:text-5xl">
-          {order.confirmation ? "Дякуємо!" : "Оформлення замовлення"}
+          {order.confirmation ? t.checkout.thanks : t.checkout.title}
         </h1>
         <CheckoutSteps current={step} />
       </div>

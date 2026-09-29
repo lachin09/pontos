@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MessageCircle, X } from "lucide-react";
+import { useI18n } from "@/lib/i18n/client";
 import {
   contactIcons as icons,
   type ContactLink,
@@ -10,6 +11,7 @@ import {
 export type { ContactLink };
 
 export function FloatingContactMenu({ links }: { links: ContactLink[] }) {
+  const { t } = useI18n();
   const [isOpen, setIsOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement | null>(null);
 
@@ -38,27 +40,25 @@ export function FloatingContactMenu({ links }: { links: ContactLink[] }) {
     >
       <section
         id="floating-contact-panel"
-        aria-label="Контакти PONTOS"
+        aria-label={t.contact.panel}
         hidden={!isOpen}
         className="w-[min(21rem,calc(100vw-2rem))] origin-bottom-right animate-rise rounded-2xl border border-border bg-surface p-4 shadow-[var(--shadow-popover)] sm:p-5"
       >
         <div className="mb-3 flex items-start justify-between gap-3">
           <div>
-            <p className="font-medium text-foreground">Зв’яжіться з нами</p>
-            <p className="mt-0.5 text-xs text-muted">
-              Допоможемо з вибором і замовленням
-            </p>
+            <p className="font-medium text-foreground">{t.contact.title}</p>
+            <p className="mt-0.5 text-xs text-muted">{t.contact.text}</p>
           </div>
           <button
             type="button"
-            aria-label="Закрити контакти"
+            aria-label={t.contact.closePanel}
             onClick={() => setIsOpen(false)}
             className="grid size-8 shrink-0 place-items-center rounded-full text-muted transition-colors hover:bg-surface-muted hover:text-foreground"
           >
             <X size={16} aria-hidden="true" />
           </button>
         </div>
-        <nav aria-label="Канали зв’язку" className="grid gap-1">
+        <nav aria-label={t.contact.channels} className="grid gap-1">
           {links.map((link) => {
             const Icon = icons[link.kind];
             return (
@@ -91,7 +91,7 @@ export function FloatingContactMenu({ links }: { links: ContactLink[] }) {
         aria-expanded={isOpen}
         aria-controls="floating-contact-panel"
         onClick={() => setIsOpen((open) => !open)}
-        aria-label={isOpen ? "Закрити контакти" : "Зв’язатися з нами"}
+        aria-label={isOpen ? t.contact.closePanel : t.contact.open}
         className="flex size-14 items-center justify-center gap-2 rounded-full bg-accent text-sm font-medium text-accent-foreground shadow-[var(--shadow-popover)] transition-[transform,background-color] duration-200 hover:scale-[1.03] hover:bg-accent-hover focus-visible:outline-offset-4 active:scale-95 sm:w-auto sm:px-5"
       >
         {isOpen ? (
@@ -100,7 +100,7 @@ export function FloatingContactMenu({ links }: { links: ContactLink[] }) {
           <MessageCircle size={20} aria-hidden="true" />
         )}
         <span className="hidden sm:inline" aria-hidden="true">
-          {isOpen ? "Закрити" : "Контакти"}
+          {isOpen ? t.contact.close : t.contact.button}
         </span>
       </button>
     </div>

@@ -3,10 +3,7 @@
  * no gender column, so it is read from the category itself: slugs are
  * transliterated from names that start with "Чоловічі" / "Жіночі".
  */
-export const GENDERS = [
-  { value: "men", label: "Чоловікам" },
-  { value: "women", label: "Жінкам" },
-] as const;
+export const GENDERS = [{ value: "men" }, { value: "women" }] as const;
 
 export type Gender = (typeof GENDERS)[number]["value"];
 
@@ -25,8 +22,14 @@ export function categoryGender(category: {
   return undefined;
 }
 
-/** "Чоловічі шкіряні куртки" → "Шкіряні куртки" once the line is chosen. */
+/**
+ * "Чоловічі шкіряні куртки" → "Шкіряні куртки" once the line is chosen.
+ * Handles the Russian and English category names too.
+ */
 export function shortCategoryName(name: string): string {
-  const short = name.replace(/^(чоловічі|жіночі)\s+/iu, "");
+  const short = name.replace(
+    /^(чоловічі|жіночі|мужские|женские|men[’']?s|women[’']?s)\s+/iu,
+    "",
+  );
   return short.charAt(0).toLocaleUpperCase("uk") + short.slice(1);
 }
