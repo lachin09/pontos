@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Monogram } from "@/components/brand/monogram";
 import { requireAdmin } from "@/lib/supabase/require-admin";
 import { AdminLogoutButton } from "@/components/admin/admin-logout-button";
 import { AdminNotificationBell } from "@/components/admin/admin-notification-bell";
@@ -23,8 +24,9 @@ export default async function AdminLayout({
           <div className="flex items-center gap-5">
             <Link
               href="/admin"
-              className="text-xs font-semibold uppercase tracking-[0.2em]"
+              className="flex items-center gap-2.5 text-xs font-semibold uppercase tracking-[0.2em]"
             >
+              <Monogram className="h-6 w-auto" />
               PONTOS{" "}
               <span className="font-normal text-muted">/ Адміністрування</span>
             </Link>

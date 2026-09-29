@@ -1,5 +1,6 @@
 import { Phone } from "lucide-react";
 import Link from "next/link";
+import { Monogram } from "@/components/brand/monogram";
 import { CartLink } from "@/components/cart/cart-link";
 import { HeaderNav } from "@/components/layout/header-nav";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
@@ -69,9 +70,12 @@ export async function SiteHeader() {
           <Link
             href={href("/")}
             aria-label={t.header.homeLabel}
-            className="w-fit font-serif text-[1.45rem] font-medium uppercase leading-none tracking-[0.34em] text-foreground sm:text-[1.7rem]"
+            className="flex w-fit items-center gap-3 text-foreground sm:gap-3.5"
           >
-            Pontos
+            <Monogram className="h-8 w-auto sm:h-10" />
+            <span className="font-serif text-[1.3rem] font-medium uppercase leading-none tracking-[0.3em] sm:text-[1.7rem] sm:tracking-[0.34em]">
+              Pontos
+            </span>
           </Link>
           <HeaderNav links={links} />
           <div className="col-start-3 flex items-center justify-end gap-1">

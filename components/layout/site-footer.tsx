@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
+import { Monogram } from "@/components/brand/monogram";
 import { contactIcons } from "@/components/layout/contact-icons";
 import { resolveContactLinks } from "@/components/layout/floating-contact-button";
 import { categoryLinks, type CategoryLink } from "@/lib/catalog/navigation";
@@ -71,11 +72,11 @@ export async function SiteFooter() {
     <footer className="bg-ink text-white">
       <div className="mx-auto grid max-w-[1440px] gap-12 px-page py-14 sm:grid-cols-2 sm:py-20 lg:grid-cols-[1.4fr_1fr_1fr_1.1fr]">
         <div>
-          <Link
-            href={href("/")}
-            className="font-serif text-[1.9rem] font-medium uppercase leading-none tracking-[0.34em]"
-          >
-            Pontos
+          <Link href={href("/")} className="flex w-fit items-center gap-4">
+            <Monogram className="h-12 w-auto" />
+            <span className="font-serif text-[1.9rem] font-medium uppercase leading-none tracking-[0.34em]">
+              Pontos
+            </span>
           </Link>
           <p className="mt-4 max-w-xs font-serif text-lg italic leading-snug text-white/60">
             {t.footer.tagline}
