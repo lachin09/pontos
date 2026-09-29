@@ -129,7 +129,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               </h1>
               <p className="mt-5 hidden max-w-md text-sm leading-7 text-white/75 sm:block sm:text-base">
                 Куртки, дублянки та пальта з натуральної шкіри й замші, еко-шуби
-                та пончо з м'якого еко-хутра — для холодного сезону й щоденного
+                та пончо з м’якого еко-хутра — для холодного сезону й щоденного
                 міста.
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8">
