@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Phone } from "lucide-react";
+import { ArrowRight, MapPin, Phone } from "lucide-react";
 import { HeroSlider } from "@/components/home/hero-slider";
 import { ProductTabs } from "@/components/home/product-tabs";
 import { AddressLink } from "@/components/layout/address-link";
@@ -18,7 +18,11 @@ import {
   getPublishedProducts,
   getStoreInfo,
 } from "@/lib/data/storefront";
-import { showroomAddress, showroomMapHref } from "@/lib/content/showroom";
+import {
+  shortAddress,
+  showroomAddress,
+  showroomMapHref,
+} from "@/lib/content/showroom";
 import { localizeCategory, localizeProduct } from "@/lib/i18n/catalog";
 import type { Locale } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
@@ -157,15 +161,28 @@ export default async function HomePage() {
       : null,
   ].filter((tab) => tab !== null);
 
-  const trustFacts = [
+  const trustFacts: {
+    value: string;
+    label: string;
+    href?: string;
+    note?: string;
+  }[] = [
     { value: t.home.trust.leather, label: t.home.trust.leatherLabel },
     { value: t.home.trust.fur, label: t.home.trust.furLabel },
-    {
-      value: t.home.trust.city,
-      label: seller.workingHours
-        ? `${t.home.trust.showroom} · ${seller.workingHours}`
-        : t.home.trust.showroom,
-    },
+    address && mapHref
+      ? {
+          // The showroom tile carries the address and opens the map.
+          value: t.home.trust.city,
+          label: shortAddress(address),
+          href: mapHref,
+          note: seller.workingHours,
+        }
+      : {
+          value: t.home.trust.city,
+          label: seller.workingHours
+            ? `${t.home.trust.showroom} · ${seller.workingHours}`
+            : t.home.trust.showroom,
+        },
     { value: t.home.trust.delivery, label: t.home.trust.deliveryLabel },
   ];
 
@@ -191,12 +208,41 @@ export default async function HomePage() {
               key={fact.value}
               className={`px-4 py-6 text-center sm:py-8 ${index % 2 === 1 ? "border-l border-border" : ""} ${index >= 2 ? "border-t border-border lg:border-t-0" : ""} ${index === 2 ? "lg:border-l" : ""}`}
             >
-              <p className="font-serif text-2xl leading-tight sm:text-[1.7rem]">
-                {fact.value}
-              </p>
-              <p className="mt-1.5 text-[0.62rem] font-medium uppercase tracking-[0.2em] text-muted">
-                {fact.label}
-              </p>
+              {fact.href ? (
+                <a
+                  href={fact.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title={t.header.openMap}
+                  className="group block"
+                >
+                  <p className="font-serif text-2xl leading-tight transition-colors group-hover:text-gold sm:text-[1.7rem]">
+                    {fact.value}
+                  </p>
+                  <p className="mt-1.5 inline-flex items-start justify-center gap-1.5 text-[0.62rem] font-medium uppercase tracking-[0.2em] text-muted">
+                    <MapPin
+                      size={12}
+                      className="mt-px shrink-0 text-gold"
+                      aria-hidden="true"
+                    />
+                    <span>{fact.label}</span>
+                  </p>
+                  {fact.note ? (
+                    <p className="mt-1 text-[0.62rem] font-medium uppercase tracking-[0.2em] text-muted">
+                      {fact.note}
+                    </p>
+                  ) : null}
+                </a>
+              ) : (
+                <>
+                  <p className="font-serif text-2xl leading-tight sm:text-[1.7rem]">
+                    {fact.value}
+                  </p>
+                  <p className="mt-1.5 text-[0.62rem] font-medium uppercase tracking-[0.2em] text-muted">
+                    {fact.label}
+                  </p>
+                </>
+              )}
             </li>
           ))}
         </ul>
