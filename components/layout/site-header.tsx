@@ -2,6 +2,7 @@ import { Phone } from "lucide-react";
 import Link from "next/link";
 import { Monogram } from "@/components/brand/monogram";
 import { CartLink } from "@/components/cart/cart-link";
+import { AddressLink } from "@/components/layout/address-link";
 import { HeaderNav } from "@/components/layout/header-nav";
 import { LanguageSwitcher } from "@/components/layout/language-switcher";
 import { MobileNavigation } from "@/components/layout/mobile-navigation";
@@ -11,6 +12,11 @@ import {
   getPublishedProducts,
   getStoreInfo,
 } from "@/lib/data/storefront";
+import {
+  shortAddress,
+  showroomAddress,
+  showroomMapHref,
+} from "@/lib/content/showroom";
 import { localizeCategory } from "@/lib/i18n/catalog";
 import { fill } from "@/lib/i18n/dictionaries";
 import { getI18n } from "@/lib/i18n/server";
@@ -35,6 +41,8 @@ export async function SiteHeader() {
       : [];
   const seller = info.status === "fulfilled" ? info.value.seller : undefined;
   const phone = seller?.phone.trim();
+  const address = seller ? showroomAddress(seller, locale) : "";
+  const mapHref = seller ? showroomMapHref(seller) : undefined;
 
   return (
     <>
@@ -48,17 +56,30 @@ export async function SiteHeader() {
             {t.header.payment}
           </p>
           <div className="hidden items-center gap-5 sm:flex">
-            {phone ? (
+            {phone || address ? (
               <p className="flex items-center gap-4">
-                {seller?.workingHours ? (
-                  <span className="text-white/55">{seller.workingHours}</span>
+                {address && mapHref ? (
+                  <AddressLink
+                    address={shortAddress(address)}
+                    href={mapHref}
+                    label={t.header.openMap}
+                    className="hidden items-center gap-1.5 whitespace-nowrap normal-case tracking-[0.06em] text-white/70 transition-colors hover:text-gold xl:flex"
+                    iconClassName="text-gold"
+                  />
                 ) : null}
-                <a
-                  href={telHref(phone)}
-                  className="text-white transition-colors hover:text-gold"
-                >
-                  {phone}
-                </a>
+                {seller?.workingHours ? (
+                  <span className="whitespace-nowrap text-white/55">
+                    {seller.workingHours}
+                  </span>
+                ) : null}
+                {phone ? (
+                  <a
+                    href={telHref(phone)}
+                    className="whitespace-nowrap text-white transition-colors hover:text-gold"
+                  >
+                    {phone}
+                  </a>
+                ) : null}
               </p>
             ) : null}
             <LanguageSwitcher className="text-white/60" />
@@ -93,6 +114,8 @@ export async function SiteHeader() {
               links={links}
               phone={phone}
               workingHours={seller?.workingHours}
+              address={address}
+              mapHref={mapHref}
             />
           </div>
         </div>

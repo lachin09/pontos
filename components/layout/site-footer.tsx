@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import Link from "next/link";
 import { Monogram } from "@/components/brand/monogram";
+import { AddressLink } from "@/components/layout/address-link";
 import { contactIcons } from "@/components/layout/contact-icons";
 import { resolveContactLinks } from "@/components/layout/floating-contact-button";
 import { categoryLinks, type CategoryLink } from "@/lib/catalog/navigation";
@@ -10,6 +11,7 @@ import {
   getPublishedProducts,
   getStoreInfo,
 } from "@/lib/data/storefront";
+import { showroomAddress, showroomMapHref } from "@/lib/content/showroom";
 import { localizeCategory } from "@/lib/i18n/catalog";
 import { getI18n } from "@/lib/i18n/server";
 import { telHref } from "@/lib/utils/format";
@@ -60,6 +62,8 @@ export async function SiteFooter() {
           productsResult.value,
         )
       : [];
+  const address = showroomAddress(info.seller, locale);
+  const mapHref = showroomMapHref(info.seller);
   const infoLinks = INFO_PAGE_SLUGS.filter((slug) =>
     info.pages[slug].trim(),
   ).map((slug) => ({
@@ -133,6 +137,15 @@ export async function SiteFooter() {
 
         <div className="grid content-start gap-3 text-sm">
           <p className="eyebrow mb-1">{t.footer.showroom}</p>
+          {address && mapHref ? (
+            <AddressLink
+              address={address}
+              href={mapHref}
+              label={t.header.openMap}
+              className="flex w-fit items-start gap-2 text-white/80 transition-colors hover:text-gold"
+              iconClassName="mt-1 shrink-0 text-gold"
+            />
+          ) : null}
           {seller.workingHours ? (
             <p className="text-white/60">{seller.workingHours}</p>
           ) : null}

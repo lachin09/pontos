@@ -31,6 +31,11 @@ export const sellerSchema = z.object({
   legalName: text(200),
   taxId: text(20),
   address: text(300),
+  /** The showroom address in the other storefront languages; empty falls back to `address`. */
+  addressRu: text(300).default(""),
+  addressEn: text(300).default(""),
+  /** Where the address links to; empty means a Google Maps search for `address`. */
+  mapUrl: z.union([z.literal(""), z.url("Вкажіть коректне посилання").max(500)]).default(""),
   email: z.union([z.literal(""), z.email("Вкажіть коректну пошту").max(200)]),
   phone: text(40),
   workingHours: text(200),
@@ -58,6 +63,9 @@ export const EMPTY_STORE_INFO: StoreInfo = {
     legalName: "",
     taxId: "",
     address: "",
+    addressRu: "",
+    addressEn: "",
+    mapUrl: "",
     email: "",
     phone: "",
     workingHours: "",

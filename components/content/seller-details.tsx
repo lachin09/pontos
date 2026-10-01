@@ -1,3 +1,5 @@
+import { AddressLink } from "@/components/layout/address-link";
+import { showroomAddress, showroomMapHref } from "@/lib/content/showroom";
 import { DEFAULT_LOCALE, type Locale } from "@/lib/i18n/config";
 import { i18nFor } from "@/lib/i18n/translator";
 import { telHref } from "@/lib/utils/format";
@@ -12,11 +14,12 @@ export function SellerDetails({
   locale?: Locale;
 }) {
   const { t } = i18nFor(locale);
+  const mapHref = showroomMapHref(seller);
   const rows = (
     [
       ["seller", seller.legalName],
       ["taxId", seller.taxId],
-      ["address", seller.address],
+      ["address", showroomAddress(seller, locale)],
       ["phone", seller.phone],
       ["email", seller.email],
       ["hours", seller.workingHours],
@@ -39,6 +42,14 @@ export function SellerDetails({
               <a href={`mailto:${value}`} className="hover:text-accent">
                 {value}
               </a>
+            ) : field === "address" && mapHref ? (
+              <AddressLink
+                address={value}
+                href={mapHref}
+                label={t.header.openMap}
+                className="inline-flex items-start gap-1.5 hover:text-accent"
+                iconClassName="mt-1 shrink-0 text-gold"
+              />
             ) : (
               value
             )}

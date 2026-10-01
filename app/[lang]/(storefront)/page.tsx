@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ArrowRight, Phone } from "lucide-react";
 import { HeroSlider } from "@/components/home/hero-slider";
 import { ProductTabs } from "@/components/home/product-tabs";
+import { AddressLink } from "@/components/layout/address-link";
 import { contactIcons } from "@/components/layout/contact-icons";
 import { resolveContactLinks } from "@/components/layout/floating-contact-button";
 import { ProductCard } from "@/components/product/product-card";
@@ -17,6 +18,7 @@ import {
   getPublishedProducts,
   getStoreInfo,
 } from "@/lib/data/storefront";
+import { showroomAddress, showroomMapHref } from "@/lib/content/showroom";
 import { localizeCategory, localizeProduct } from "@/lib/i18n/catalog";
 import type { Locale } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
@@ -125,6 +127,8 @@ export default async function HomePage() {
   const hero = heroProducts(products, HERO_SLIDES);
   const showroomImage = (featuredProducts[3] ?? products[0])?.images[0];
   const { seller } = info;
+  const address = showroomAddress(seller, locale);
+  const mapHref = showroomMapHref(seller);
   const instagram = resolveContactLinks(contactRecords).find(
     (link) => link.kind === "instagram",
   );
@@ -345,8 +349,24 @@ export default async function HomePage() {
             <p className="mt-6 max-w-md text-sm leading-7 text-white/65 sm:text-base">
               {t.home.showroom.text}
             </p>
-            {seller.workingHours || seller.phone ? (
+            {address || seller.workingHours || seller.phone ? (
               <dl className="mt-8 grid gap-4 border-t border-white/10 pt-6 text-sm sm:grid-cols-2">
+                {address && mapHref ? (
+                  <div className="sm:col-span-2">
+                    <dt className="text-[0.62rem] uppercase tracking-[0.2em] text-white/45">
+                      {t.home.showroom.address}
+                    </dt>
+                    <dd className="mt-1">
+                      <AddressLink
+                        address={address}
+                        href={mapHref}
+                        label={t.header.openMap}
+                        className="inline-flex items-start gap-2 text-white transition-colors hover:text-gold"
+                        iconClassName="mt-1 shrink-0 text-gold"
+                      />
+                    </dd>
+                  </div>
+                ) : null}
                 {seller.workingHours ? (
                   <div>
                     <dt className="text-[0.62rem] uppercase tracking-[0.2em] text-white/45">

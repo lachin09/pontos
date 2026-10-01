@@ -30,7 +30,27 @@ const SELLER_FIELDS: {
     placeholder: "ФОП Прізвище Ім’я По батькові",
   },
   { key: "taxId", label: "РНОКПП / ЄДРПОУ", placeholder: "1234567890" },
-  { key: "address", label: "Адреса", placeholder: "Місто, вулиця, будинок" },
+  {
+    key: "address",
+    label: "Адреса шоуруму",
+    placeholder: "ст. м. Лісова, вул. Якова Гніздовського, 1А",
+  },
+  {
+    key: "addressRu",
+    label: "Адреса російською",
+    placeholder: "ст. м. Лесная, ул. Якова Гнездовского, 1А",
+  },
+  {
+    key: "addressEn",
+    label: "Адреса англійською",
+    placeholder: "Lisova metro station, 1A Yakova Hnizdovskoho St",
+  },
+  {
+    key: "mapUrl",
+    label: "Посилання на мапу",
+    placeholder: "https://maps.app.goo.gl/… (порожнє — пошук у Google Maps)",
+    type: "url",
+  },
   {
     key: "phone",
     label: "Телефон",

@@ -43,6 +43,7 @@ export const en: Dictionary = {
     mobileNav: "Mobile navigation",
     showroom: "Showroom in Kyiv",
     language: "Site language",
+    openMap: "Open in maps",
   },
   footer: {
     tagline: "Genuine leather, suede and fur.",
@@ -118,6 +119,7 @@ export const en: Dictionary = {
       title: "Try it on before you buy",
       text: "Leather and fur are best seen in person. Visit our showroom for a fitting, or order with delivery across Ukraine and worldwide — pay on delivery.",
       hours: "Opening hours",
+      address: "Address",
       phone: "Phone",
       cta: "Book a fitting",
     },

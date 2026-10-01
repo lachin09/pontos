@@ -4,6 +4,7 @@ import { ChevronRight, Menu, Phone } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useState } from "react";
 import { Drawer } from "@/components/ui/drawer";
+import { AddressLink } from "@/components/layout/address-link";
 import { Button } from "@/components/ui/button";
 import {
   availableLines,
@@ -23,10 +24,14 @@ export function MobileNavigation({
   links,
   phone,
   workingHours,
+  address,
+  mapHref,
 }: {
   links: CategoryLink[];
   phone?: string;
   workingHours?: string;
+  address?: string;
+  mapHref?: string;
 }) {
   const { t, href } = useI18n();
   const [open, setOpen] = useState(false);
@@ -83,16 +88,27 @@ export function MobileNavigation({
           </Link>
         </nav>
         <LanguageSwitcher className="mt-8 text-sm tracking-[0.14em] text-muted" />
-        {phone ? (
+        {phone || address ? (
           <div className="mt-8 border-t border-border pt-6">
             <p className="eyebrow">{t.header.showroom}</p>
-            <a
-              href={telHref(phone)}
-              className="mt-3 flex min-h-11 items-center gap-2 text-lg font-medium"
-            >
-              <Phone size={17} className="text-gold" aria-hidden="true" />
-              {phone}
-            </a>
+            {address && mapHref ? (
+              <AddressLink
+                address={address}
+                href={mapHref}
+                label={t.header.openMap}
+                className="mt-3 flex min-h-11 items-start gap-2 py-2 text-sm leading-6 text-foreground"
+                iconClassName="mt-1.5 shrink-0 text-gold"
+              />
+            ) : null}
+            {phone ? (
+              <a
+                href={telHref(phone)}
+                className="flex min-h-11 items-center gap-2 text-lg font-medium"
+              >
+                <Phone size={17} className="text-gold" aria-hidden="true" />
+                {phone}
+              </a>
+            ) : null}
             {workingHours ? (
               <p className="text-sm text-muted">{workingHours}</p>
             ) : null}
