@@ -47,23 +47,23 @@ export async function SiteHeader() {
   return (
     <>
       <div className="bg-ink text-[0.66rem] tracking-[0.14em] text-white/75 sm:text-[0.7rem]">
-        <div className="mx-auto flex min-h-9 max-w-[1440px] items-center justify-center gap-6 px-page py-2 sm:justify-between">
-          <p className="text-center uppercase">
+        <div className="mx-auto flex min-h-9 max-w-[1440px] flex-wrap items-center justify-center gap-x-6 gap-y-1 px-page py-2 sm:justify-between">
+          <p className="text-center uppercase sm:whitespace-nowrap">
             {t.header.delivery}
             <span className="mx-2.5 text-gold" aria-hidden="true">
               ·
             </span>
             {t.header.payment}
           </p>
-          <div className="hidden items-center gap-5 sm:flex">
+          <div className="hidden flex-wrap items-center justify-center gap-x-5 gap-y-1 sm:flex">
             {phone || address ? (
-              <p className="flex items-center gap-4">
+              <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
                 {address && mapHref ? (
                   <AddressLink
                     address={shortAddress(address)}
                     href={mapHref}
                     label={t.header.openMap}
-                    className="hidden items-center gap-1.5 whitespace-nowrap normal-case tracking-[0.06em] text-white/70 transition-colors hover:text-gold xl:flex"
+                    className="flex items-center gap-1.5 whitespace-nowrap normal-case tracking-[0.06em] text-white/70 transition-colors hover:text-gold"
                     iconClassName="text-gold"
                   />
                 ) : null}
