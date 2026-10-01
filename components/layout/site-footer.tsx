@@ -3,7 +3,7 @@ import Link from "next/link";
 import { Monogram } from "@/components/brand/monogram";
 import { AddressLink } from "@/components/layout/address-link";
 import { contactIcons } from "@/components/layout/contact-icons";
-import { resolveContactLinks } from "@/components/layout/floating-contact-button";
+import { resolveContactLinks } from "@/lib/content/contact-links";
 import { categoryLinks, type CategoryLink } from "@/lib/catalog/navigation";
 import {
   getActiveCategories,

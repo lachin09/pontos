@@ -135,6 +135,30 @@ describe("statusChangedMessage", () => {
     ).toContain(words);
   });
 
+  it("explains an out-of-stock cancellation in the customer's language", () => {
+    const cancelled = (locale: "uk" | "ru" | "en") =>
+      statusChangedMessage(
+        makeNotifiableOrder({ status: "cancelled", locale }),
+        statusOnly,
+        "",
+        "out_of_stock",
+      );
+    expect(cancelled("uk")).toContain("вже немає в наявності");
+    expect(cancelled("ru")).toContain("уже нет в наличии");
+    expect(cancelled("en")).toContain("no longer in stock");
+  });
+
+  it("ignores the cancel reason for any other status", () => {
+    expect(
+      statusChangedMessage(
+        makeNotifiableOrder({ status: "shipped" }),
+        statusOnly,
+        "",
+        "out_of_stock",
+      ),
+    ).toContain("відправлено");
+  });
+
   it("says thanks when only the payment became paid", () => {
     const text = statusChangedMessage(
       makeNotifiableOrder({ status: "confirmed", paymentStatus: "paid" }),

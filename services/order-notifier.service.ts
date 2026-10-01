@@ -1,12 +1,19 @@
 import { randomBytes } from "node:crypto";
-import type { OrderStatus, PaymentStatus } from "@/lib/constants/order";
+import type {
+  CancelReason,
+  OrderStatus,
+  PaymentStatus,
+} from "@/lib/constants/order";
 import type { Locale } from "@/lib/i18n/config";
 import { ORDER_STATUS_LABELS } from "@/lib/constants/order-labels";
 import type { InlineButton, TelegramBot } from "@/lib/telegram/bot";
 import { localeFromTelegram } from "@/lib/telegram/customer-texts";
 import {
   customerLinkedMessage,
+  followButtons,
+  followInvite,
   helpMessage,
+  isPurchaseComplete,
   orderLinkInvalidMessage,
   orderLinkTakenMessage,
   OWNER_CONNECTED,
@@ -21,6 +28,7 @@ import {
 import {
   availableActions,
   callbackData,
+  canCancelAsOutOfStock,
   ORDER_ACTIONS,
   parseOwnerCallback,
   type OrderAction,
@@ -58,7 +66,11 @@ export function createOrderNotifier(deps: {
   orders: OrderNotificationRepository;
   settings: Pick<
     SettingsService,
-    "getStoreInfo" | "getTelegramSettings" | "saveTelegramSettings"
+    | "getStoreInfo"
+    | "getTelegramSettings"
+    | "saveTelegramSettings"
+    | "getTelegramChannel"
+    | "getContactLinks"
   >;
   bot: TelegramBot;
   /** e.g. "https://pontos-xi.vercel.app"; adds an admin link to owner cards. */
@@ -89,8 +101,28 @@ export function createOrderNotifier(deps: {
     await bot.sendMessage(chatId, customerLinkedMessage(order, bankDetails));
   }
 
-  /** Tells a subscribed customer what changed. `previous` is before the update. */
-  async function notifyStatusChange(orderId: string, previous: Statuses) {
+  /** Where to follow the store; empty if that cannot be looked up right now. */
+  async function followLinks(locale: Locale): Promise<InlineButton[][]> {
+    try {
+      const [channel, contactLinks] = await Promise.all([
+        settings.getTelegramChannel(),
+        settings.getContactLinks(),
+      ]);
+      return followButtons(channel, contactLinks, locale);
+    } catch {
+      return [];
+    }
+  }
+
+  /**
+   * Tells a subscribed customer what changed. `previous` is before the
+   * update. A completed purchase also invites them to follow the store.
+   */
+  async function notifyStatusChange(
+    orderId: string,
+    previous: Statuses,
+    cancelReason: CancelReason | null = null,
+  ) {
     const order = await orders.findById(orderId);
     if (!order?.telegramChatId) return;
     const changed = {
@@ -99,8 +131,25 @@ export function createOrderNotifier(deps: {
     };
     if (!changed.status && !changed.paymentStatus) return;
     const { bankDetails } = await seller();
-    const text = statusChangedMessage(order, changed, bankDetails);
-    if (text) await bot.sendMessage(order.telegramChatId, text);
+    const text = statusChangedMessage(
+      order,
+      changed,
+      bankDetails,
+      cancelReason,
+    );
+    if (!text) return;
+    const follow = isPurchaseComplete(order, changed)
+      ? await followLinks(order.locale)
+      : [];
+    if (follow.length === 0) {
+      await bot.sendMessage(order.telegramChatId, text);
+      return;
+    }
+    await bot.sendMessage(
+      order.telegramChatId,
+      `${text}\n\n${followInvite(order.locale)}`,
+      follow,
+    );
   }
 
   /**
@@ -197,6 +246,7 @@ export function createOrderNotifier(deps: {
     press: { id: string } & Card,
     order: NotifiableOrder,
     action: OrderAction,
+    cancelReason: CancelReason | null = null,
   ) {
     if (!availableActions(order).includes(action)) {
       // Stale button: the status changed since this card was drawn.
@@ -218,13 +268,19 @@ export function createOrderNotifier(deps: {
     const current = updated ? await orders.findById(order.id) : null;
     if (!current) return bot.answerCallback(press.id, "Замовлення не знайдено");
 
-    await redraw(press, current, "Змінено в Telegram");
+    await redraw(
+      press,
+      current,
+      cancelReason === "out_of_stock"
+        ? "Скасовано в Telegram: немає в наявності"
+        : "Змінено в Telegram",
+    );
     await bot.answerCallback(
       press.id,
       `Готово: ${ORDER_STATUS_LABELS[current.status]}`,
     );
     // The customer hears about it exactly as if it changed on the site.
-    await notifyStatusChange(order.id, previous);
+    await notifyStatusChange(order.id, previous, cancelReason);
   }
 
   async function handleOwnerPress(callback: ButtonPress) {
@@ -236,9 +292,7 @@ export function createOrderNotifier(deps: {
     const card: Card = {
       chatId,
       messageId,
-      isReceipt: Boolean(
-        callback.message?.photo || callback.message?.document,
-      ),
+      isReceipt: Boolean(callback.message?.photo || callback.message?.document),
     };
     const { ownerChatIds } = await settings.getTelegramSettings();
     if (!ownerChatIds.includes(chatId)) {
@@ -256,17 +310,42 @@ export function createOrderNotifier(deps: {
         return bot.answerCallback(callback.id);
       }
       if (parsed.kind === "action" && parsed.action === "cancel") {
-        // Cancelling asks for a second tap.
-        const buttons = [
-          [
-            {
-              text: "Так, скасувати",
-              callbackData: callbackData.confirmCancel(order.id),
-            },
-            { text: "↩︎ Назад", callbackData: callbackData.back(order.id) },
-          ],
-        ];
-        const question = "Скасувати це замовлення?";
+        // Cancelling asks for a second tap, which also picks what the
+        // customer is told.
+        const back = {
+          text: "↩︎ Назад",
+          callbackData: callbackData.back(order.id),
+        };
+        const withReason = canCancelAsOutOfStock(order);
+        const buttons = withReason
+          ? [
+              [
+                {
+                  text: "Немає в наявності",
+                  callbackData: callbackData.confirmCancel(
+                    order.id,
+                    "out_of_stock",
+                  ),
+                },
+                {
+                  text: "Інша причина",
+                  callbackData: callbackData.confirmCancel(order.id),
+                },
+              ],
+              [back],
+            ]
+          : [
+              [
+                {
+                  text: "Так, скасувати",
+                  callbackData: callbackData.confirmCancel(order.id),
+                },
+                back,
+              ],
+            ];
+        const question = withReason
+          ? "Скасувати це замовлення? Оберіть причину — її побачить покупець."
+          : "Скасувати це замовлення?";
         await (card.isReceipt
           ? bot.editCaption(
               chatId,
@@ -282,9 +361,22 @@ export function createOrderNotifier(deps: {
             ));
         return bot.answerCallback(callback.id);
       }
-      const action =
-        parsed.kind === "confirm-cancel" ? "cancel" : parsed.action;
-      await applyOwnerAction({ id: callback.id, ...card }, order, action);
+      if (parsed.kind === "confirm-cancel") {
+        // An old "out of stock" button on an order paid since then.
+        const reason = canCancelAsOutOfStock(order) ? parsed.reason : null;
+        await applyOwnerAction(
+          { id: callback.id, ...card },
+          order,
+          "cancel",
+          reason,
+        );
+      } else {
+        await applyOwnerAction(
+          { id: callback.id, ...card },
+          order,
+          parsed.action,
+        );
+      }
     } catch (error) {
       console.error(
         "Telegram owner action failed",

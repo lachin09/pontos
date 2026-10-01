@@ -47,10 +47,52 @@ describe("PATCH /api/admin/orders/[id]", () => {
       "confirmed",
       "pending",
     );
-    expect(notifyStatusChange).toHaveBeenCalledWith(ID, {
+    expect(notifyStatusChange).toHaveBeenCalledWith(
+      ID,
+      { status: "new", paymentStatus: "pending" },
+      null,
+    );
+  });
+
+  it("passes the cancel reason on, but only for an unpaid cancellation", async () => {
+    orders.getStatuses.mockResolvedValue({
       status: "new",
       paymentStatus: "pending",
     });
+    orders.updateStatus.mockResolvedValue(true);
+
+    await patch({
+      status: "cancelled",
+      paymentStatus: "pending",
+      cancelReason: "out_of_stock",
+    });
+    expect(notifyStatusChange).toHaveBeenLastCalledWith(
+      ID,
+      expect.anything(),
+      "out_of_stock",
+    );
+
+    await patch({
+      status: "cancelled",
+      paymentStatus: "paid",
+      cancelReason: "out_of_stock",
+    });
+    expect(notifyStatusChange).toHaveBeenLastCalledWith(
+      ID,
+      expect.anything(),
+      null,
+    );
+
+    await patch({
+      status: "confirmed",
+      paymentStatus: "pending",
+      cancelReason: "out_of_stock",
+    });
+    expect(notifyStatusChange).toHaveBeenLastCalledWith(
+      ID,
+      expect.anything(),
+      null,
+    );
   });
 
   it("returns 404 and notifies nobody for an unknown order", async () => {

@@ -88,6 +88,14 @@ describe("callback data", () => {
     expect(parseOwnerCallback(callbackData.confirmCancel(ID))).toEqual({
       kind: "confirm-cancel",
       orderId: ID,
+      reason: null,
+    });
+    expect(
+      parseOwnerCallback(callbackData.confirmCancel(ID, "out_of_stock")),
+    ).toEqual({
+      kind: "confirm-cancel",
+      orderId: ID,
+      reason: "out_of_stock",
     });
     expect(parseOwnerCallback(callbackData.back(ID))).toEqual({
       kind: "back",

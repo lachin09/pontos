@@ -1,13 +1,18 @@
 import { getCountryName } from "@/lib/constants/countries";
+import type { CancelReason } from "@/lib/constants/order";
 import {
   ORDER_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_LABELS,
 } from "@/lib/constants/order-labels";
+import { resolveContactLinks } from "@/lib/content/contact-links";
 import type { Locale } from "@/lib/i18n/config";
 import { fill, getDictionary } from "@/lib/i18n/dictionaries";
+import type { InlineButton } from "@/lib/telegram/bot";
 import { customerTexts } from "@/lib/telegram/customer-texts";
 import { formatPrice } from "@/lib/utils/format";
+import type { ContactLinkRecord } from "@/lib/validators/contact-links";
+import type { TelegramChannel } from "@/lib/validators/telegram";
 import type { NotifiableOrder } from "@/types/order";
 
 /**
@@ -85,16 +90,23 @@ export function customerLinkedMessage(
 
 /**
  * The customer's update after an admin change, or null when the change is
- * not worth a message (e.g. back to "new").
+ * not worth a message (e.g. back to "new"). A cancellation explains itself
+ * when the owner gave a reason.
  */
 export function statusChangedMessage(
   order: NotifiableOrder,
   changed: { status: boolean; paymentStatus: boolean },
   bankDetails: string,
+  cancelReason: CancelReason | null = null,
 ): string | null {
   const t = customerTexts(order.locale);
   let text: string | undefined;
-  if (changed.status) text = t.statuses[order.status];
+  if (changed.status) {
+    text =
+      order.status === "cancelled" && cancelReason === "out_of_stock"
+        ? t.cancelledOutOfStock
+        : t.statuses[order.status];
+  }
   if (!text && changed.paymentStatus && order.paymentStatus === "paid") {
     text = t.statuses.paid;
   }
@@ -104,6 +116,54 @@ export function statusChangedMessage(
       ? bankDetailsBlock(order, bankDetails)
       : "";
   return `<b>${orderTitle(order)}</b>\n${text}${details}`;
+}
+
+/**
+ * The moment a purchase is complete: a transfer was paid, or a
+ * cash-on-delivery order was delivered. Each happens once per order.
+ */
+export function isPurchaseComplete(
+  order: NotifiableOrder,
+  changed: { status: boolean; paymentStatus: boolean },
+) {
+  return order.paymentMethod === "bank_transfer"
+    ? changed.paymentStatus && order.paymentStatus === "paid"
+    : changed.status && order.status === "delivered";
+}
+
+/** The line that introduces the "follow us" buttons. */
+export const followInvite = (locale: Locale) => customerTexts(locale).followUs;
+
+/**
+ * "Follow us" link buttons, two per row: the store's Telegram channel, then
+ * the Instagram and TikTok profiles from the contact links.
+ */
+export function followButtons(
+  channel: TelegramChannel,
+  contactLinks: ContactLinkRecord[],
+  locale: Locale,
+): InlineButton[][] {
+  const links = resolveContactLinks(contactLinks);
+  const profile = (kind: "instagram" | "tiktok", text: string) => {
+    const link = links.find((entry) => entry.kind === kind);
+    return link ? [{ text, url: link.href }] : [];
+  };
+  const buttons: InlineButton[] = [
+    ...(channel?.username
+      ? [
+          {
+            text: customerTexts(locale).channelButton,
+            url: `https://t.me/${channel.username}`,
+          },
+        ]
+      : []),
+    ...profile("instagram", "Instagram"),
+    ...profile("tiktok", "TikTok"),
+  ];
+  const rows: InlineButton[][] = [];
+  for (let i = 0; i < buttons.length; i += 2)
+    rows.push(buttons.slice(i, i + 2));
+  return rows;
 }
 
 /** "Замовлення №1042" in the customer's language, without the greeting. */

@@ -10,7 +10,7 @@ import { ProductPurchase } from "@/components/product/product-purchase";
 import { ProductGallery } from "@/components/product/product-gallery";
 import { ProductColorProvider } from "@/components/product/product-color-context";
 import { contactIcons } from "@/components/layout/contact-icons";
-import { resolveContactLinks } from "@/components/layout/floating-contact-button";
+import { resolveContactLinks } from "@/lib/content/contact-links";
 import {
   getActiveCategories,
   getContactLinks,

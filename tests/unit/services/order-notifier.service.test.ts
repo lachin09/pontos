@@ -1,8 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 import type { InlineButton, TelegramBot } from "@/lib/telegram/bot";
 import { EMPTY_STORE_INFO } from "@/lib/validators/store-info";
+import type { ContactLinkRecord } from "@/lib/validators/contact-links";
 import {
   EMPTY_TELEGRAM_SETTINGS,
+  type TelegramChannel,
   type TelegramSettings,
 } from "@/lib/validators/telegram";
 import type { OrderNotificationRepository } from "@/repositories/order.repository";
@@ -23,6 +25,8 @@ function setup({
   phone = "+380971234567",
   failStatusUpdate = false,
   failSendTo = [] as number[],
+  channel = null as TelegramChannel,
+  contactLinks = [] as ContactLinkRecord[],
 } = {}) {
   const orders = new Map<string, NotifiableOrder>([[order.id, { ...order }]]);
   const sent: Sent[] = [];
@@ -109,6 +113,8 @@ function setup({
       async saveTelegramSettings(value) {
         telegramSettings = value;
       },
+      getTelegramChannel: async () => channel,
+      getContactLinks: async () => contactLinks,
     },
   });
   return {
@@ -325,9 +331,10 @@ describe("order notifier", () => {
       expect(t.edits[0].text).toContain("Скасувати це замовлення?");
       expect(t.edits[0].buttons).toEqual([
         [
-          { text: "Так, скасувати", callbackData: `o:X:${ID_HEX}` },
-          { text: "↩︎ Назад", callbackData: `o:b:${ID_HEX}` },
+          { text: "Немає в наявності", callbackData: `o:O:${ID_HEX}` },
+          { text: "Інша причина", callbackData: `o:X:${ID_HEX}` },
         ],
+        [{ text: "↩︎ Назад", callbackData: `o:b:${ID_HEX}` }],
       ]);
 
       await t.press(`o:b:${ID_HEX}`);
@@ -339,6 +346,50 @@ describe("order notifier", () => {
       await t.press(`o:X:${ID_HEX}`);
       expect(t.order().status).toBe("cancelled");
       expect(buttonTexts(t.edits[2].buttons)).toEqual([["Відкрити в адмінці"]]);
+    });
+
+    it("tells the customer the item is out of stock when that is the reason", async () => {
+      const t = setup({
+        ...owner,
+        order: makeNotifiableOrder({ telegramChatId: 555 }),
+      });
+      await t.press(`o:O:${ID_HEX}`);
+      expect(t.order().status).toBe("cancelled");
+      expect(t.edits[0].text).toContain(
+        "Скасовано в Telegram: немає в наявності",
+      );
+      expect(t.sent).toHaveLength(1);
+      expect(t.sent[0].text).toContain("вже немає в наявності");
+      expect(t.sent[0].text).not.toContain("Якщо це помилка");
+    });
+
+    it("cancels for another reason with the usual message", async () => {
+      const t = setup({
+        ...owner,
+        order: makeNotifiableOrder({ telegramChatId: 555 }),
+      });
+      await t.press(`o:X:${ID_HEX}`);
+      expect(t.sent[0].text).toContain("Замовлення скасовано. Якщо це помилка");
+    });
+
+    it("does not offer 'out of stock' for an order that is already paid", async () => {
+      const t = setup({
+        ...owner,
+        order: makeNotifiableOrder({
+          status: "paid",
+          paymentStatus: "paid",
+          telegramChatId: 555,
+        }),
+      });
+      await t.press(`o:x:${ID_HEX}`);
+      expect(buttonTexts(t.edits[0].buttons)).toEqual([
+        ["Так, скасувати", "↩︎ Назад"],
+      ]);
+
+      // A stale "out of stock" button still cancels, with the usual message.
+      await t.press(`o:O:${ID_HEX}`);
+      expect(t.order().status).toBe("cancelled");
+      expect(t.sent[0].text).toContain("Якщо це помилка");
     });
 
     it("refuses presses from chats that are not owner chats", async () => {
@@ -397,6 +448,112 @@ describe("order notifier", () => {
       expect(sent).toHaveLength(1);
       expect(sent[0].text).toContain("підтверджено");
       expect(sent[0].text).toContain("IBAN: UA12");
+    });
+
+    describe("follow-us buttons after a completed purchase", () => {
+      const follow = {
+        channel: { chatId: -1001, title: "PONTOS", username: "pontos_shop" },
+        contactLinks: [
+          {
+            id: "5f0e9b9e-0000-4000-8000-000000000001",
+            type: "phone" as const,
+            label: "Телефон",
+            value: "+380971234567",
+          },
+          {
+            id: "5f0e9b9e-0000-4000-8000-000000000002",
+            type: "instagram" as const,
+            label: "Instagram",
+            value: "@pontos",
+          },
+          {
+            id: "5f0e9b9e-0000-4000-8000-000000000003",
+            type: "tiktok" as const,
+            label: "TikTok",
+            value: "pontos",
+          },
+        ],
+      };
+      const ID = "3f2b1c9e-0000-4000-8000-000000000001";
+
+      it("invites a customer whose transfer was just confirmed as paid", async () => {
+        const { notifier, sent } = setup({
+          ...follow,
+          order: makeNotifiableOrder({
+            telegramChatId: 555,
+            status: "paid",
+            paymentStatus: "paid",
+          }),
+        });
+        await notifier.notifyStatusChange(ID, {
+          status: "confirmed",
+          paymentStatus: "pending",
+        });
+        expect(sent[0].text).toContain("оплату отримано");
+        expect(sent[0].text).toContain("Підписуйтесь на нас");
+        expect(sent[0].buttons).toEqual([
+          [
+            { text: "Telegram-канал", url: "https://t.me/pontos_shop" },
+            { text: "Instagram", url: "https://www.instagram.com/pontos" },
+          ],
+          [{ text: "TikTok", url: "https://www.tiktok.com/@pontos" }],
+        ]);
+      });
+
+      it("invites a cash-on-delivery customer once the order is delivered", async () => {
+        const { notifier, sent } = setup({
+          ...follow,
+          order: makeNotifiableOrder({
+            telegramChatId: 555,
+            paymentMethod: "cash_on_delivery",
+            paymentStatus: "cash_on_delivery",
+            status: "delivered",
+          }),
+        });
+        await notifier.notifyStatusChange(ID, {
+          status: "shipped",
+          paymentStatus: "cash_on_delivery",
+        });
+        expect(sent[0].text).toContain("доставлено");
+        expect(buttonTexts(sent[0].buttons)).toEqual([
+          ["Telegram-канал", "Instagram"],
+          ["TikTok"],
+        ]);
+      });
+
+      it("does not repeat the invitation on other updates", async () => {
+        // A prepaid order being delivered was already invited when it was paid.
+        const { notifier, sent } = setup({
+          ...follow,
+          order: makeNotifiableOrder({
+            telegramChatId: 555,
+            status: "delivered",
+            paymentStatus: "paid",
+          }),
+        });
+        await notifier.notifyStatusChange(ID, {
+          status: "shipped",
+          paymentStatus: "paid",
+        });
+        expect(sent[0].text).not.toContain("Підписуйтесь");
+        expect(sent[0].buttons).toBeUndefined();
+      });
+
+      it("sends the plain update when the store has nothing to follow", async () => {
+        const { notifier, sent } = setup({
+          order: makeNotifiableOrder({
+            telegramChatId: 555,
+            status: "paid",
+            paymentStatus: "paid",
+          }),
+        });
+        await notifier.notifyStatusChange(ID, {
+          status: "confirmed",
+          paymentStatus: "pending",
+        });
+        expect(sent[0].text).not.toContain("Підписуйтесь");
+        expect(sent[0].buttons).toBeUndefined();
+      });
     });
 
     it("stays silent when nothing changed or nobody subscribed", async () => {

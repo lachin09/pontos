@@ -6,7 +6,7 @@ import { HeroSlider } from "@/components/home/hero-slider";
 import { ProductTabs } from "@/components/home/product-tabs";
 import { AddressLink } from "@/components/layout/address-link";
 import { contactIcons } from "@/components/layout/contact-icons";
-import { resolveContactLinks } from "@/components/layout/floating-contact-button";
+import { resolveContactLinks } from "@/lib/content/contact-links";
 import { ProductCard } from "@/components/product/product-card";
 import { ProductPhoto } from "@/components/product/product-photo";
 import { Badge } from "@/components/ui/badge";

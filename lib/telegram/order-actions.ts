@@ -1,4 +1,8 @@
-import type { OrderStatus, PaymentStatus } from "@/lib/constants/order";
+import type {
+  CancelReason,
+  OrderStatus,
+  PaymentStatus,
+} from "@/lib/constants/order";
 import type { NotifiableOrder } from "@/types/order";
 
 /**
@@ -54,6 +58,14 @@ export const ORDER_ACTIONS: Record<
   },
 };
 
+/**
+ * "Out of stock" is offered as a cancel reason only before money changed
+ * hands: its message to the customer says nothing about a refund.
+ */
+export const canCancelAsOutOfStock = (order: {
+  paymentStatus: PaymentStatus;
+}) => order.paymentStatus !== "paid";
+
 const awaitingTransfer = (order: NotifiableOrder) =>
   order.paymentMethod === "bank_transfer" && order.paymentStatus !== "paid";
 
@@ -78,12 +90,12 @@ export function availableActions(order: NotifiableOrder): OrderAction[] {
 
 /*
  * Callback data (Telegram allows 64 bytes): "o:<code>:<order id, 32 hex>".
- * Extra codes: "X" confirms a cancellation, "b" goes back to the normal
- * buttons.
+ * Extra codes: "X" confirms a cancellation, "O" confirms it and tells the
+ * customer the item is out of stock, "b" goes back to the normal buttons.
  */
 export type OwnerCallback =
   | { kind: "action"; action: OrderAction; orderId: string }
-  | { kind: "confirm-cancel"; orderId: string }
+  | { kind: "confirm-cancel"; orderId: string; reason: CancelReason | null }
   | { kind: "back"; orderId: string };
 
 const compact = (uuid: string) => uuid.replace(/-/g, "");
@@ -93,7 +105,8 @@ const expand = (hex: string) =>
 export const callbackData = {
   action: (action: OrderAction, orderId: string) =>
     `o:${ORDER_ACTIONS[action].code}:${compact(orderId)}`,
-  confirmCancel: (orderId: string) => `o:X:${compact(orderId)}`,
+  confirmCancel: (orderId: string, reason: CancelReason | null = null) =>
+    `o:${reason === "out_of_stock" ? "O" : "X"}:${compact(orderId)}`,
   back: (orderId: string) => `o:b:${compact(orderId)}`,
 };
 
@@ -102,7 +115,10 @@ export function parseOwnerCallback(data: string): OwnerCallback | null {
   if (!match) return null;
   const [, code, hex] = match;
   const orderId = expand(hex);
-  if (code === "X") return { kind: "confirm-cancel", orderId };
+  if (code === "X") return { kind: "confirm-cancel", orderId, reason: null };
+  if (code === "O") {
+    return { kind: "confirm-cancel", orderId, reason: "out_of_stock" };
+  }
   if (code === "b") return { kind: "back", orderId };
   const action = (Object.keys(ORDER_ACTIONS) as OrderAction[]).find(
     (name) => ORDER_ACTIONS[name].code === code,

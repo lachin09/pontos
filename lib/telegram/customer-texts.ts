@@ -18,6 +18,9 @@ export type CustomerTexts = {
   receiptReceived: string;
   receiptNoOrder: string;
   statuses: Partial<Record<OrderStatus, string>>;
+  cancelledOutOfStock: string;
+  followUs: string;
+  channelButton: string;
   welcome: string;
   orderLinkInvalid: string;
   orderLinkTaken: string;
@@ -51,6 +54,10 @@ const uk: CustomerTexts = {
     cancelled:
       "Замовлення скасовано. Якщо це помилка — напишіть або зателефонуйте нам.",
   },
+  cancelledOutOfStock:
+    "На жаль, товару з вашого замовлення вже немає в наявності, тому ми його скасували. Перепрошуємо за незручності! Напишіть або зателефонуйте нам — допоможемо підібрати щось схоже.",
+  followUs: "Підписуйтесь на нас — новинки з’являються там першими 👇",
+  channelButton: "Telegram-канал",
   welcome:
     "Вітаємо в PONTOS! 👋\nЦей бот надсилає підтвердження та статус замовлень. Щоб підключити замовлення, натисніть кнопку «Отримати підтвердження в Telegram» після оформлення на сайті.",
   orderLinkInvalid:
@@ -85,9 +92,12 @@ const ru: CustomerTexts = {
     processing: "Готовим заказ к отправке.",
     shipped: "Заказ отправлен 🚚",
     delivered: "Заказ доставлен. Спасибо, что выбрали PONTOS!",
-    cancelled:
-      "Заказ отменён. Если это ошибка — напишите или позвоните нам.",
+    cancelled: "Заказ отменён. Если это ошибка — напишите или позвоните нам.",
   },
+  cancelledOutOfStock:
+    "К сожалению, товара из вашего заказа уже нет в наличии, поэтому мы его отменили. Приносим извинения за неудобства! Напишите или позвоните нам — поможем подобрать что-то похожее.",
+  followUs: "Подписывайтесь на нас — новинки появляются там первыми 👇",
+  channelButton: "Telegram-канал",
   welcome:
     "Добро пожаловать в PONTOS! 👋\nЭтот бот присылает подтверждения и статус заказов. Чтобы подключить заказ, нажмите кнопку «Получить подтверждение в Telegram» после оформления на сайте.",
   orderLinkInvalid:
@@ -95,8 +105,7 @@ const ru: CustomerTexts = {
   orderLinkTaken:
     "Этот заказ уже подключён к другому чату. Если это ваш заказ — свяжитесь с нами.",
   help: "Вопрос по заказу? Позвоните нам: {phone}",
-  helpNoPhone:
-    "Вопрос по заказу? Напишите нам через сайт — кнопка «Контакты».",
+  helpNoPhone: "Вопрос по заказу? Напишите нам через сайт — кнопка «Контакты».",
 };
 
 const en: CustomerTexts = {
@@ -125,6 +134,10 @@ const en: CustomerTexts = {
     cancelled:
       "Your order has been cancelled. If this is a mistake, please message or call us.",
   },
+  cancelledOutOfStock:
+    "Unfortunately, the item you ordered is no longer in stock, so we have cancelled the order. We are sorry for the inconvenience! Message or call us and we will help you find something similar.",
+  followUs: "Follow us — new arrivals appear there first 👇",
+  channelButton: "Telegram channel",
   welcome:
     "Welcome to PONTOS! 👋\nThis bot sends order confirmations and status updates. To connect an order, press “Get confirmation in Telegram” after checking out on the site.",
   orderLinkInvalid:

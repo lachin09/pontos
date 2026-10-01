@@ -7,13 +7,9 @@ import {
   Send,
   type LucideIcon,
 } from "lucide-react";
+import type { ContactLink } from "@/lib/content/contact-links";
 
-export type ContactLink = {
-  kind: "phone" | "whatsapp" | "telegram" | "instagram" | "tiktok" | "custom";
-  label: string;
-  href: string;
-  detail?: string;
-};
+export type { ContactLink };
 
 // Kept out of the client menu module so server components can use it too.
 export const contactIcons: Record<ContactLink["kind"], LucideIcon> = {

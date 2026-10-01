@@ -4,7 +4,11 @@ import type { AdminCategoryInput } from "@/lib/validators/admin-category";
 import type { ContactLinksInput } from "@/lib/validators/contact-links";
 import type { StoreInfo } from "@/lib/validators/store-info";
 import type { TelegramStatus } from "@/lib/validators/telegram";
-import type { OrderStatus, PaymentStatus } from "@/lib/constants/order";
+import type {
+  CancelReason,
+  OrderStatus,
+  PaymentStatus,
+} from "@/lib/constants/order";
 import type { AdminLoginData } from "@/lib/validators/admin-auth";
 
 /** Typed calls to the admin API. Admin components use these, not fetch. */
@@ -133,7 +137,12 @@ export const adminCategoriesApi = {
 export const adminOrdersApi = {
   updateStatus: (
     id: string,
-    statuses: { status: OrderStatus; paymentStatus: PaymentStatus },
+    statuses: {
+      status: OrderStatus;
+      paymentStatus: PaymentStatus;
+      /** With status "cancelled": what the customer is told in Telegram. */
+      cancelReason?: CancelReason | null;
+    },
   ) =>
     apiRequest(`/api/admin/orders/${id}`, {
       method: "PATCH",

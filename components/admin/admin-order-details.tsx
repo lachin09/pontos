@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import {
   ORDER_STATUSES,
   PAYMENT_STATUSES,
+  type CancelReason,
   type OrderStatus,
   type PaymentStatus,
 } from "@/lib/constants/order";
@@ -16,6 +17,7 @@ import {
 } from "@/lib/constants/order-labels";
 import { formatPrice } from "@/lib/utils/format";
 import { adminOrdersApi } from "@/lib/api/admin";
+import { canCancelAsOutOfStock } from "@/lib/telegram/order-actions";
 import { errorMessage } from "@/lib/api/client";
 import { Button } from "@/components/ui/button";
 
@@ -67,8 +69,14 @@ export function AdminOrderDetails({ order }: { order: AdminOrderDetailsData }) {
   const [paymentStatus, setPaymentStatus] = useState<PaymentStatus>(
     order.paymentStatus,
   );
+  const [cancelReason, setCancelReason] = useState<CancelReason | "">("");
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  // Offered while the order is being cancelled, before any payment.
+  const cancelling =
+    status === "cancelled" &&
+    order.status !== "cancelled" &&
+    canCancelAsOutOfStock({ paymentStatus });
   const date = (value: string) =>
     new Intl.DateTimeFormat("uk-UA", {
       dateStyle: "medium",
@@ -78,7 +86,11 @@ export function AdminOrderDetails({ order }: { order: AdminOrderDetailsData }) {
     setBusy(true);
     setMessage(null);
     try {
-      await adminOrdersApi.updateStatus(order.id, { status, paymentStatus });
+      await adminOrdersApi.updateStatus(order.id, {
+        status,
+        paymentStatus,
+        cancelReason: cancelling && cancelReason ? cancelReason : null,
+      });
       setMessage("Статуси оновлено.");
       router.refresh();
     } catch (error) {
@@ -248,6 +260,26 @@ export function AdminOrderDetails({ order }: { order: AdminOrderDetailsData }) {
             ))}
           </select>
         </label>
+        {cancelling ? (
+          <label className="mt-4 grid gap-1.5 text-sm" htmlFor="cancel-reason">
+            Причина скасування
+            <select
+              id="cancel-reason"
+              value={cancelReason}
+              onChange={(event) =>
+                setCancelReason(event.target.value as CancelReason | "")
+              }
+              className="min-h-11 rounded-[var(--radius-control)] border border-border bg-background px-3"
+            >
+              <option value="">Не вказувати</option>
+              <option value="out_of_stock">Немає в наявності</option>
+            </select>
+            <span className="text-xs text-muted">
+              Покупець побачить її в Telegram, якщо підключив бота до
+              замовлення.
+            </span>
+          </label>
+        ) : null}
         <Button
           className="mt-4 w-full"
           disabled={

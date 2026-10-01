@@ -25,6 +25,10 @@ export const DELIVERY_METHODS = [
   "courier",
 ] as const;
 
+/** Why the store cancelled an order, when the customer should be told. */
+export const CANCEL_REASONS = ["out_of_stock"] as const;
+
+export type CancelReason = (typeof CANCEL_REASONS)[number];
 export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export type PaymentStatus = (typeof PAYMENT_STATUSES)[number];
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
