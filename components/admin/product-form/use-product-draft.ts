@@ -4,12 +4,12 @@ import { useState } from "react";
 import { slugify } from "@/lib/utils/slugify";
 import {
   initialDraft,
-  newVariant,
+  newColor,
 } from "@/components/admin/product-form/product-draft";
 import type {
   ProductCategoryOption,
+  ProductColorDraft,
   ProductDraft,
-  ProductVariantDraft,
 } from "@/components/admin/product-form/types";
 
 export type UpdateProductField = <K extends keyof ProductDraft>(
@@ -19,8 +19,8 @@ export type UpdateProductField = <K extends keyof ProductDraft>(
 
 /**
  * Editable product state: plain fields, the name → slug link (until the slug
- * is edited by hand), the base price → empty variant prices link, and the
- * variant rows.
+ * is edited by hand), the base price → empty size prices link, and the
+ * colours with their sizes.
  */
 export function useProductDraft(
   categories: ProductCategoryOption[],
@@ -47,31 +47,30 @@ export function useProductDraft(
     setDraft((current) => ({
       ...current,
       price,
-      variants: current.variants.map((variant) =>
-        variant.price === "" ? { ...variant, price } : variant,
-      ),
+      colors: current.colors.map((color) => ({
+        ...color,
+        sizes: color.sizes.map((size) =>
+          size.price === "" ? { ...size, price } : size,
+        ),
+      })),
     }));
   };
 
-  const updateVariant = (
-    index: number,
-    patch: Partial<ProductVariantDraft>,
-  ) => {
+  const updateColor = (index: number, patch: Partial<ProductColorDraft>) => {
     setDraft((current) => ({
       ...current,
-      variants: current.variants.map((variant, variantIndex) =>
-        variantIndex === index ? { ...variant, ...patch } : variant,
+      colors: current.colors.map((color, colorIndex) =>
+        colorIndex === index ? { ...color, ...patch } : color,
       ),
     }));
   };
 
-  const addVariant = () =>
-    update("variants", [...draft.variants, newVariant(draft.price)]);
+  const addColor = () => update("colors", [...draft.colors, newColor()]);
 
-  const removeVariant = (index: number) =>
+  const removeColor = (index: number) =>
     update(
-      "variants",
-      draft.variants.filter((_, row) => row !== index),
+      "colors",
+      draft.colors.filter((_, row) => row !== index),
     );
 
   return {
@@ -80,8 +79,8 @@ export function useProductDraft(
     setName,
     setPrice,
     markSlugTouched: () => setSlugTouched(true),
-    updateVariant,
-    addVariant,
-    removeVariant,
+    updateColor,
+    addColor,
+    removeColor,
   };
 }

@@ -4,10 +4,13 @@ import {
   type Translations,
   type ProductTextField,
 } from "@/lib/i18n/content";
+import { compareSizes, sameSize } from "@/lib/product/sizes";
 import type { AdminProductInput } from "@/lib/validators/admin-product";
 import type {
   ProductCategoryOption,
+  ProductColorDraft,
   ProductDraft,
+  ProductSizeDraft,
   ProductVariantDraft,
 } from "@/components/admin/product-form/types";
 
@@ -43,16 +46,65 @@ function translationsInput(
   return input;
 }
 
-export function newVariant(price = ""): ProductVariantDraft {
+export function newSize(size: string, price = ""): ProductSizeDraft {
+  const key = crypto.randomUUID();
   return {
-    sku: `PT-${crypto.randomUUID().slice(0, 8).toUpperCase()}`,
-    size: "",
-    color: "",
-    color_hex: "#222222",
+    key,
+    sku: `PT-${key.slice(0, 8).toUpperCase()}`,
+    size,
     price,
     stock: "0",
     is_available: true,
   };
+}
+
+export function newColor(): ProductColorDraft {
+  return {
+    key: crypto.randomUUID(),
+    color: "",
+    color_hex: "#222222",
+    sizes: [],
+  };
+}
+
+const bySize = (a: ProductSizeDraft, b: ProductSizeDraft) =>
+  compareSizes(a.size, b.size);
+
+/** Saved variants grouped by colour, in the order the colours first appear. */
+export function colorsDraft(
+  variants: ProductVariantDraft[],
+): ProductColorDraft[] {
+  const colors = new Map<string, ProductColorDraft>();
+  for (const { color, color_hex, ...size } of variants) {
+    const name = color.trim().toLowerCase();
+    const group = colors.get(name) ?? { ...newColor(), color, color_hex };
+    colors.set(name, group);
+    group.sizes.push({ ...size, key: size.id ?? crypto.randomUUID() });
+  }
+  return Array.from(colors.values(), (group) => ({
+    ...group,
+    sizes: group.sizes.sort(bySize),
+  }));
+}
+
+export function hasSize(sizes: ProductSizeDraft[], label: string) {
+  return sizes.some((size) => sameSize(size.size, label));
+}
+
+/** Adds the sizes the colour does not have yet, keeping them in size order. */
+export function addSizes(
+  sizes: ProductSizeDraft[],
+  labels: string[],
+  price: string,
+): ProductSizeDraft[] {
+  const added = labels
+    .filter((label) => label && !hasSize(sizes, label))
+    .map((label) => newSize(label, price));
+  return added.length > 0 ? [...sizes, ...added].sort(bySize) : sizes;
+}
+
+export function removeSize(sizes: ProductSizeDraft[], label: string) {
+  return sizes.filter((size) => !sameSize(size.size, label));
 }
 
 export function initialDraft(
@@ -73,7 +125,7 @@ export function initialDraft(
     is_new: false,
     is_sale: false,
     translations: translationsDraft(),
-    variants: [newVariant()],
+    colors: [newColor()],
   };
 }
 
@@ -93,22 +145,24 @@ export function toProductInput(draft: ProductDraft): AdminProductInput {
     is_new: draft.is_new,
     is_sale: draft.is_sale,
     translations: translationsInput(draft.translations),
-    variants: draft.variants.map((variant) => ({
-      ...(variant.id ? { id: variant.id } : {}),
-      sku: variant.sku.trim(),
-      size: variant.size.trim(),
-      color: variant.color.trim(),
-      color_hex: variant.color_hex,
-      price: Number(variant.price),
-      stock: Number(variant.stock),
-      is_available: variant.is_available,
-    })),
+    variants: draft.colors.flatMap((color) =>
+      color.sizes.map((size) => ({
+        ...(size.id ? { id: size.id } : {}),
+        sku: size.sku.trim(),
+        size: size.size.trim(),
+        color: color.color.trim(),
+        color_hex: color.color_hex,
+        price: Number(size.price),
+        stock: Number(size.stock),
+        is_available: size.is_available,
+      })),
+    ),
   };
 }
 
 /** Distinct, non-empty variant colours an image can be tagged with. */
-export function variantColors(variants: ProductVariantDraft[]) {
+export function variantColors(colors: ProductColorDraft[]) {
   return Array.from(
-    new Set(variants.map((variant) => variant.color.trim()).filter(Boolean)),
+    new Set(colors.map((color) => color.color.trim()).filter(Boolean)),
   );
 }

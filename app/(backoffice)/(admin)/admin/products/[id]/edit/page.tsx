@@ -1,4 +1,7 @@
-import { translationsDraft } from "@/components/admin/product-form/product-draft";
+import {
+  colorsDraft,
+  translationsDraft,
+} from "@/components/admin/product-form/product-draft";
 import { notFound } from "next/navigation";
 import { requireAdminServices } from "@/lib/server/admin-services";
 import {
@@ -62,7 +65,7 @@ export default async function EditAdminProductPage({
           is_new: product.isNew,
           is_sale: product.isSale,
           translations: translationsDraft(product.translations),
-          variants,
+          colors: colorsDraft(variants),
         }}
         initialImages={images}
       />

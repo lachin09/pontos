@@ -16,6 +16,22 @@ export interface ProductVariantDraft {
   is_available: boolean;
 }
 
+/** One size of a colour; `key` only identifies the row in the form. */
+export interface ProductSizeDraft extends Omit<
+  ProductVariantDraft,
+  "color" | "color_hex"
+> {
+  key: string;
+}
+
+/** A colour and the sizes it comes in; each size is saved as one variant. */
+export interface ProductColorDraft {
+  key: string;
+  color: string;
+  color_hex: string;
+  sizes: ProductSizeDraft[];
+}
+
 export interface ProductImageDraft {
   id: string;
   url: string;
@@ -47,5 +63,5 @@ export interface ProductDraft {
   is_sale: boolean;
   /** Russian and English text as typed; empty strings mean "use Ukrainian". */
   translations: Record<ContentLocale, Record<ProductTextField, string>>;
-  variants: ProductVariantDraft[];
+  colors: ProductColorDraft[];
 }

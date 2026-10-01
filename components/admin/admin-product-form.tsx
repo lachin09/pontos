@@ -51,15 +51,19 @@ export function AdminProductForm({
     setName,
     setPrice,
     markSlugTouched,
-    updateVariant,
-    addVariant,
-    removeVariant,
+    updateColor,
+    addColor,
+    removeColor,
   } = useProductDraft(categories, initialProduct);
   const productImages = useProductImages(initialImages, setError);
 
   const submit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (saving) return;
+    if (draft.colors.some((color) => color.sizes.length === 0)) {
+      setError("Оберіть хоча б один розмір для кожного кольору.");
+      return;
+    }
     setSaving(true);
     setError(null);
     setNotice(null);
@@ -172,21 +176,22 @@ export function AdminProductForm({
       <ProductTranslationsSection draft={draft} update={update} />
 
       <ProductVariantsSection
-        variants={draft.variants}
-        onAdd={addVariant}
-        onChange={updateVariant}
-        onRemove={removeVariant}
+        colors={draft.colors}
+        price={draft.price}
+        onAdd={addColor}
+        onChange={updateColor}
+        onRemove={removeColor}
       />
 
       <ProductImagesSection
         images={productImages.images}
         newFiles={productImages.newFiles}
         productName={draft.name}
-        colors={variantColors(draft.variants)}
+        colors={variantColors(draft.colors)}
         onChoose={(files) =>
           productImages.chooseImages(
             files,
-            draft.variants[0]?.color.trim() || null,
+            draft.colors[0]?.color.trim() || null,
           )
         }
         onImageChange={productImages.updateImage}

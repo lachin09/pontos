@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareSizes } from "@/lib/product/sizes";
+import { compareSizes, parseSizes } from "@/lib/product/sizes";
 
 describe("compareSizes", () => {
   it("orders letter sizes from small to large", () => {
@@ -28,5 +28,21 @@ describe("compareSizes", () => {
       "50",
       "Один розмір",
     ]);
+  });
+});
+
+describe("parseSizes", () => {
+  it("splits sizes typed with commas or spaces", () => {
+    expect(parseSizes("6xl, 66")).toEqual(["6XL", "66"]);
+    expect(parseSizes("66 68  70")).toEqual(["66", "68", "70"]);
+  });
+
+  it("keeps a phrase as one size", () => {
+    expect(parseSizes("Один розмір, 50")).toEqual(["Один розмір", "50"]);
+  });
+
+  it("drops repeats and empty pieces", () => {
+    expect(parseSizes("xl, XL, , 48 48")).toEqual(["XL", "48"]);
+    expect(parseSizes("  ")).toEqual([]);
   });
 });
