@@ -214,9 +214,21 @@ const CUSTOMER_LANGUAGE: Record<Locale, string> = {
   en: "\nМова клієнта: англійська",
 };
 
+/** Whether status updates reach the customer, or the owner must phone them. */
+export function ownerTelegramLine(order: NotifiableOrder) {
+  return order.telegramChatId
+    ? "Telegram: ✅ підключено, статуси надходять автоматично"
+    : "Telegram: ❌ не підключено — зателефонуйте клієнту";
+}
+
 export function ownerNewOrderMessage(order: NotifiableOrder) {
   const comment = order.comment ? `\nКоментар: ${escape(order.comment)}` : "";
-  return `🛍 <b>Нове замовлення №${order.orderNumber}</b>\n${escape(order.firstName)} ${escape(order.lastName)} · ${escape(order.phone)}${CUSTOMER_LANGUAGE[order.locale]}${comment}\n\n${orderLines(order)}`;
+  return `🛍 <b>Нове замовлення №${order.orderNumber}</b>\n${escape(order.firstName)} ${escape(order.lastName)} · ${escape(order.phone)}${CUSTOMER_LANGUAGE[order.locale]}\n${ownerTelegramLine(order)}${comment}\n\n${orderLines(order)}`;
+}
+
+/** Owner alert when the customer connects their chat to an order. */
+export function ownerCustomerConnectedMessage(order: NotifiableOrder) {
+  return `📲 <b>Замовлення №${order.orderNumber}</b>\n${escape(order.firstName)} ${escape(order.lastName)} підключив(ла) Telegram — підтвердження та статуси надходитимуть автоматично.`;
 }
 
 export const welcomeMessage = (locale: Locale) => customerTexts(locale).welcome;

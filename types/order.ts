@@ -71,6 +71,8 @@ export interface OrderDetails {
   deliveryPrice: number;
   total: number;
   createdAt: string;
+  /** True when the customer connected the Telegram bot to this order. */
+  telegramConnected: boolean;
   items: OrderItem[];
   history: OrderStatusChange[];
 }

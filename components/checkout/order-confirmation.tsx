@@ -22,7 +22,11 @@ export function OrderConfirmation({
       <span className="grid size-14 animate-rise place-items-center rounded-full bg-accent text-white">
         <Check size={26} aria-hidden="true" />
       </span>
-      <h2 id="confirmation-heading" className="mt-6 text-3xl">
+      <h2
+        id="confirmation-heading"
+        tabIndex={-1}
+        className="mt-6 text-3xl outline-none"
+      >
         {c.title}
       </h2>
       <p className="mt-2 text-sm text-muted">

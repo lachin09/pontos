@@ -109,7 +109,7 @@ export function createSupabaseOrderAdminRepository(
         client
           .from("orders")
           .select(
-            "id, order_number, first_name, last_name, phone, city, delivery_method, delivery_address, delivery_country_code, delivery_postal_code, nova_poshta_division_id, nova_poshta_division_name, nova_poshta_division_category, payment_method, payment_status, status, comment, subtotal, delivery_price, total, created_at, order_items(id, product_name, product_image, size, color, price, quantity, subtotal)",
+            "id, order_number, first_name, last_name, phone, city, delivery_method, delivery_address, delivery_country_code, delivery_postal_code, nova_poshta_division_id, nova_poshta_division_name, nova_poshta_division_category, payment_method, payment_status, status, comment, subtotal, delivery_price, total, created_at, telegram_chat_id, order_items(id, product_name, product_image, size, color, price, quantity, subtotal)",
           )
           .eq("id", id)
           .maybeSingle(),
@@ -143,6 +143,7 @@ export function createSupabaseOrderAdminRepository(
         deliveryPrice: Number(order.delivery_price),
         total: Number(order.total),
         createdAt: order.created_at,
+        telegramConnected: order.telegram_chat_id !== null,
         items: order.order_items.map((item) => ({
           id: item.id,
           productName: item.product_name,

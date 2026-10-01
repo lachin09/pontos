@@ -177,6 +177,18 @@ describe("order notifier", () => {
       expect(sent[0].text).toContain("Замовлення №1042");
     });
 
+    it("tells the owners once the customer is reachable in Telegram", async () => {
+      const { message, sent } = setup({
+        telegram: { ownerChatIds: [777], connectCode: null },
+      });
+      await message(`/start o_${TOKEN_HEX}`);
+      await message(`/start o_${TOKEN_HEX}`);
+      const owner = sent.filter((m) => m.chatId === 777);
+      expect(owner).toHaveLength(1);
+      expect(owner[0].text).toContain("Замовлення №1042");
+      expect(owner[0].text).toContain("підключив(ла) Telegram");
+    });
+
     it("lets the same chat open the link again", async () => {
       const { message, sent } = setup({
         order: makeNotifiableOrder({ telegramChatId: 555 }),

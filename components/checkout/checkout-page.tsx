@@ -2,7 +2,7 @@
 
 import { ArrowRight, ShoppingBag } from "lucide-react";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { CheckoutForm } from "@/components/checkout/checkout-form";
 import { CheckoutSteps } from "@/components/checkout/checkout-steps";
 import { OrderConfirmation } from "@/components/checkout/order-confirmation";
@@ -22,7 +22,12 @@ import type { CheckoutData } from "@/lib/validators/checkout";
 import { useCartStore } from "@/stores/cart.store";
 import { useCheckoutStore } from "@/stores/checkout.store";
 
-const scrollToTop = () => window.scrollTo({ top: 0, behavior: "smooth" });
+/** The heading each stage opens with; it receives focus when the stage changes. */
+const STAGE_HEADINGS = {
+  1: "checkout-heading",
+  2: "review-heading",
+  3: "confirmation-heading",
+} as const;
 
 /** Sequences checkout: details form → review → confirmation. */
 export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
@@ -39,9 +44,19 @@ export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
     onPlaced() {
       clearCart();
       clearCheckout();
-      scrollToTop();
     },
   });
+  const step = order.confirmation ? 3 : reviewing ? 2 : 1;
+  const previousStep = useRef(step);
+
+  // Each stage starts at the top. This runs after the new stage has rendered:
+  // scrolling before the long form is replaced leaves phones at the bottom.
+  useEffect(() => {
+    if (previousStep.current === step) return;
+    previousStep.current = step;
+    window.scrollTo({ top: 0, behavior: "instant" });
+    document.getElementById(STAGE_HEADINGS[step])?.focus({ preventScroll: true });
+  }, [step]);
 
   if (!hasHydrated) {
     return (
@@ -83,7 +98,6 @@ export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
     setData(data);
     order.startReview();
     setReviewing(true);
-    scrollToTop();
   }
 
   function edit() {
@@ -91,13 +105,15 @@ export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
     setReviewing(false);
   }
 
-  const step = order.confirmation ? 3 : reviewing ? 2 : 1;
-
   return (
     <div className="mx-auto min-h-[60vh] max-w-[1440px] px-page py-8 sm:py-12">
       <div className="mb-6 border-b border-border pb-6 sm:mb-8">
         <p className="eyebrow">PONTOS</p>
-        <h1 className="mt-2 text-4xl leading-tight sm:text-5xl">
+        <h1
+          id="checkout-heading"
+          tabIndex={-1}
+          className="mt-2 text-4xl leading-tight outline-none sm:text-5xl"
+        >
           {order.confirmation ? t.checkout.thanks : t.checkout.title}
         </h1>
         <CheckoutSteps current={step} />

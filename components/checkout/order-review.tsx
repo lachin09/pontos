@@ -60,7 +60,7 @@ export function OrderReview({
       className="max-w-2xl rounded-[var(--radius-card)] border border-border bg-surface p-5 sm:p-7"
       aria-labelledby="review-heading"
     >
-      <h2 id="review-heading" className="text-2xl">
+      <h2 id="review-heading" tabIndex={-1} className="text-2xl outline-none">
         {c.reviewTitle}
       </h2>
       <dl className="mt-5 grid gap-4 text-sm sm:grid-cols-2">

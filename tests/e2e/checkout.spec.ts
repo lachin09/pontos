@@ -98,6 +98,13 @@ test.describe("checkout", () => {
 
     const review = page.getByRole("region", { name: "Перевірте дані" });
     await expect(review).toBeVisible();
+    // The review stage opens at the top (the form left the page scrolled down).
+    await expect
+      .poll(() => page.evaluate(() => window.scrollY), { timeout: 3000 })
+      .toBeLessThan(50);
+    await expect(
+      page.getByRole("heading", { level: 2, name: "Перевірте дані" }),
+    ).toBeFocused();
     await expect(review).toContainText(
       `${customer.firstName} ${customer.lastName}`,
     );

@@ -18,6 +18,7 @@ import {
   orderLinkTakenMessage,
   OWNER_CONNECTED,
   OWNER_LINK_INVALID,
+  ownerCustomerConnectedMessage,
   ownerOrderMessage,
   ownerReceiptMessage,
   receiptNoOrderMessage,
@@ -94,11 +95,26 @@ export function createOrderNotifier(deps: {
     if (order.telegramChatId !== null && order.telegramChatId !== chatId) {
       return bot.sendMessage(chatId, orderLinkTakenMessage(order.locale));
     }
-    if (order.telegramChatId === null) {
+    const firstLink = order.telegramChatId === null;
+    if (firstLink) {
       await orders.setTelegramChat(order.id, chatId);
     }
     const { bankDetails } = await seller();
     await bot.sendMessage(chatId, customerLinkedMessage(order, bankDetails));
+    if (firstLink) await tellOwners(ownerCustomerConnectedMessage(order));
+  }
+
+  /** Plain notice to every owner chat; a blocked chat is logged, not fatal. */
+  async function tellOwners(html: string) {
+    const { ownerChatIds } = await settings.getTelegramSettings();
+    const results = await Promise.allSettled(
+      ownerChatIds.map((chatId) => bot.sendMessage(chatId, html)),
+    );
+    for (const result of results) {
+      if (result.status === "rejected") {
+        console.error("Owner Telegram notice failed", String(result.reason));
+      }
+    }
   }
 
   /** Where to follow the store; empty if that cannot be looked up right now. */

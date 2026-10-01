@@ -216,6 +216,15 @@ describe("owner and help messages", () => {
     expect(text).toContain("Коментар: Дзвоніть після 18:00");
   });
 
+  it("tells the owner whether to phone the customer", () => {
+    expect(ownerNewOrderMessage(makeNotifiableOrder())).toContain(
+      "Telegram: ❌ не підключено — зателефонуйте клієнту",
+    );
+    expect(
+      ownerNewOrderMessage(makeNotifiableOrder({ telegramChatId: 555 })),
+    ).toContain("Telegram: ✅ підключено");
+  });
+
   it("tells the owner when the customer shops in another language", () => {
     expect(ownerNewOrderMessage(makeNotifiableOrder({ locale: "en" }))).toContain(
       "Мова клієнта: англійська",

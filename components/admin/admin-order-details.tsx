@@ -42,6 +42,7 @@ export interface AdminOrderDetailsData {
   deliveryPrice: number;
   total: number;
   createdAt: string;
+  telegramConnected: boolean;
   items: {
     id: string;
     productName: string;
@@ -144,6 +145,13 @@ export function AdminOrderDetails({ order }: { order: AdminOrderDetailsData }) {
               >
                 {order.phone}
               </a>
+              <p
+                className={`mt-1 text-xs ${order.telegramConnected ? "text-success" : "text-danger"}`}
+              >
+                {order.telegramConnected
+                  ? "Telegram підключено — статуси надходять автоматично"
+                  : "Telegram не підключено — повідомте клієнта телефоном"}
+              </p>
             </div>
             <div>
               <p className="text-xs text-muted">Доставка</p>
