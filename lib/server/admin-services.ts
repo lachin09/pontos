@@ -7,12 +7,16 @@ import { createSupabaseCategoryAdminRepository } from "@/repositories/supabase/c
 import { createSupabaseNotificationRepository } from "@/repositories/supabase/notification.repository";
 import { createSupabaseOrderAdminRepository } from "@/repositories/supabase/order.repository";
 import {
+  createSupabaseChannelPostRepository,
   createSupabaseProductAdminRepository,
   createSupabaseProductImageRepository,
 } from "@/repositories/supabase/product-admin.repository";
 import { createSupabaseSettingsRepository } from "@/repositories/supabase/settings.repository";
+import { siteUrl } from "@/lib/server/storefront-services";
+import { getTelegramBot } from "@/lib/telegram/bot";
 import { createCategoryAdminService } from "@/services/admin/category-admin.service";
 import { createProductAdminService } from "@/services/admin/product-admin.service";
+import { createChannelPoster } from "@/services/channel-poster.service";
 import { createSettingsService } from "@/services/settings.service";
 
 /**
@@ -22,9 +26,13 @@ import { createSettingsService } from "@/services/settings.service";
  */
 export function createAdminServices(client: SupabaseClient<Database>) {
   const storage = createSupabaseImageStorage(client);
+  const products = createSupabaseProductAdminRepository(client, storage);
+  const settings = createSettingsService(
+    createSupabaseSettingsRepository(client),
+  );
   return {
     products: createProductAdminService({
-      products: createSupabaseProductAdminRepository(client, storage),
+      products,
       images: createSupabaseProductImageRepository(client),
       storage,
     }),
@@ -34,7 +42,14 @@ export function createAdminServices(client: SupabaseClient<Database>) {
     }),
     orders: createSupabaseOrderAdminRepository(client),
     notifications: createSupabaseNotificationRepository(client),
-    settings: createSettingsService(createSupabaseSettingsRepository(client)),
+    settings,
+    channel: createChannelPoster({
+      products,
+      posts: createSupabaseChannelPostRepository(client),
+      settings,
+      bot: getTelegramBot()?.bot ?? null,
+      siteUrl: siteUrl(),
+    }),
   };
 }
 

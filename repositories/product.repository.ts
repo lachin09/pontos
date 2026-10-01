@@ -44,6 +44,16 @@ export interface ProductAdminRepository {
   delete(id: string): Promise<void>;
 }
 
+/** Which products the store's Telegram channel has already been shown. */
+export interface ChannelPostRepository {
+  /** Marks a product as announced; false if it already was. */
+  claim(productId: string): Promise<boolean>;
+  /** Undoes a claim after a failed post, so the next save tries again. */
+  release(productId: string): Promise<void>;
+  /** Counts everything already published as announced. */
+  skipPublished(): Promise<void>;
+}
+
 export interface ProductImageRecord {
   id: string;
   productId: string;

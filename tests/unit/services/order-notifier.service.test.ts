@@ -89,6 +89,8 @@ function setup({
     async answerCallback(id, text) {
       answers.push({ id, text });
     },
+    sendPhotos: vi.fn(),
+    getChat: vi.fn(),
     getUsername: async () => "pontos_bot",
     setWebhook: vi.fn(),
     getWebhookInfo: vi.fn(),

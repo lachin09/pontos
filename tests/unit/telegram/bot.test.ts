@@ -137,6 +137,120 @@ describe("createTelegramBot", () => {
     await expect(bot.editMessage(1, 9, "same")).resolves.toBeUndefined();
   });
 
+  it("posts a single photo with its caption", async () => {
+    const fetchMock = vi.fn(async () => ok({}));
+    const bot = createTelegramBot(
+      "TOKEN",
+      fetchMock as unknown as typeof fetch,
+    );
+    await bot.sendPhotos(-100, ["https://cdn.test/a.jpg"], "<b>Пальто</b>");
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toMatch(/\/sendPhoto$/);
+    expect(JSON.parse(init.body as string)).toEqual({
+      chat_id: -100,
+      photo: "https://cdn.test/a.jpg",
+      caption: "<b>Пальто</b>",
+      parse_mode: "HTML",
+    });
+  });
+
+  it("posts several photos as one album captioned on the first, ten at most", async () => {
+    const fetchMock = vi.fn(async () => ok([]));
+    const bot = createTelegramBot(
+      "TOKEN",
+      fetchMock as unknown as typeof fetch,
+    );
+    const urls = Array.from({ length: 12 }, (_, i) => `https://cdn.test/${i}`);
+    await bot.sendPhotos(-100, urls, "Підпис");
+    const [url, init] = fetchMock.mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ];
+    expect(url).toMatch(/\/sendMediaGroup$/);
+    const { media } = JSON.parse(init.body as string);
+    expect(media).toHaveLength(10);
+    expect(media[0]).toEqual({
+      type: "photo",
+      media: "https://cdn.test/0",
+      caption: "Підпис",
+      parse_mode: "HTML",
+    });
+    expect(media[1]).toEqual({ type: "photo", media: "https://cdn.test/1" });
+  });
+
+  describe("getChat", () => {
+    const chatBot = (member: unknown) => {
+      const fetchMock = vi.fn(async (url: string) => {
+        if (url.endsWith("/getChat")) {
+          return ok({
+            id: -1001,
+            type: "channel",
+            title: "PONTOS",
+            username: "pontos",
+          });
+        }
+        if (url.endsWith("/getMe"))
+          return ok({ id: 7, username: "pontos_bot" });
+        return member instanceof Response ? member : ok(member);
+      });
+      return {
+        fetchMock,
+        bot: createTelegramBot("TOKEN", fetchMock as unknown as typeof fetch),
+      };
+    };
+
+    it("lets the bot post in a channel where it is an admin with that right", async () => {
+      const { bot, fetchMock } = chatBot({
+        status: "administrator",
+        can_post_messages: true,
+      });
+      await expect(bot.getChat("@pontos")).resolves.toEqual({
+        id: -1001,
+        type: "channel",
+        title: "PONTOS",
+        username: "pontos",
+        canPost: true,
+      });
+      const [, init] = fetchMock.mock.calls.at(-1) as unknown as [
+        string,
+        RequestInit,
+      ];
+      expect(JSON.parse(init.body as string)).toEqual({
+        chat_id: -1001,
+        user_id: 7,
+      });
+    });
+
+    it("cannot post as an admin without the posting right", async () => {
+      const { bot } = chatBot({
+        status: "administrator",
+        can_post_messages: false,
+      });
+      await expect(bot.getChat("@pontos")).resolves.toMatchObject({
+        canPost: false,
+      });
+    });
+
+    it("cannot post where Telegram hides the members from it", async () => {
+      const { bot } = chatBot(
+        new Response(
+          JSON.stringify({
+            ok: false,
+            error_code: 400,
+            description: "Bad Request: member list is inaccessible",
+          }),
+          { status: 400 },
+        ),
+      );
+      await expect(bot.getChat("@pontos")).resolves.toMatchObject({
+        canPost: false,
+      });
+    });
+  });
+
   it("answers button presses", async () => {
     const fetchMock = vi.fn(async () => ok(true));
     const bot = createTelegramBot(

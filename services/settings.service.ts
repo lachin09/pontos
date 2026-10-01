@@ -12,8 +12,11 @@ import {
 } from "@/lib/validators/store-info";
 import {
   EMPTY_TELEGRAM_SETTINGS,
+  TELEGRAM_CHANNEL_SETTING_KEY,
   TELEGRAM_SETTING_KEY,
+  telegramChannelSchema,
   telegramSettingsSchema,
+  type TelegramChannel,
   type TelegramSettings,
 } from "@/lib/validators/telegram";
 import type { SettingsRepository } from "@/repositories/settings.repository";
@@ -45,6 +48,11 @@ export function createSettingsService(settings: SettingsRepository) {
       ),
     saveTelegramSettings: (value: TelegramSettings) =>
       settings.save(TELEGRAM_SETTING_KEY, value),
+
+    getTelegramChannel: (): Promise<TelegramChannel> =>
+      settings.get(TELEGRAM_CHANNEL_SETTING_KEY, telegramChannelSchema, null),
+    saveTelegramChannel: (channel: TelegramChannel) =>
+      settings.save(TELEGRAM_CHANNEL_SETTING_KEY, channel),
   };
 }
 

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { adminProductsApi } from "@/lib/api/admin";
 import { errorMessage } from "@/lib/api/client";
@@ -42,6 +42,7 @@ export function AdminProductForm({
 }: AdminProductFormProps) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const {
@@ -93,7 +94,27 @@ export function AdminProductForm({
         return;
       }
 
-      setNotice("Зміни збережено.");
+      // A product that just went live is announced in the Telegram channel.
+      let posted = false;
+      if (input.is_published) {
+        try {
+          ({ posted } = await adminProductsApi.postToChannel(result.id, {
+            force: false,
+          }));
+        } catch (error) {
+          // Saving again retries: the product is still due for its post.
+          setError(
+            `Товар збережено, але не опубліковано в Telegram-каналі. ${errorMessage(error, "Спробуйте зберегти ще раз.")}`,
+          );
+          return;
+        }
+      }
+
+      setNotice(
+        posted
+          ? "Зміни збережено. Товар опубліковано в Telegram-каналі."
+          : "Зміни збережено.",
+      );
       if (window.location.pathname.endsWith("/admin/products/new")) {
         router.replace(`/admin/products/${result.id}/edit`);
         router.refresh();
@@ -109,6 +130,31 @@ export function AdminProductForm({
       );
     } finally {
       setSaving(false);
+    }
+  };
+
+  /** Posts the product as it is saved now, even if it was posted before. */
+  const postToChannel = async () => {
+    if (
+      !draft.id ||
+      !window.confirm(
+        "Опублікувати цей товар у Telegram-каналі? Допис побачать усі підписники.",
+      )
+    ) {
+      return;
+    }
+    setPosting(true);
+    setError(null);
+    setNotice(null);
+    try {
+      await adminProductsApi.postToChannel(draft.id, { force: true });
+      setNotice("Товар опубліковано в Telegram-каналі.");
+    } catch (error) {
+      setError(
+        errorMessage(error, "Не вдалося опублікувати товар у Telegram-каналі."),
+      );
+    } finally {
+      setPosting(false);
     }
   };
 
@@ -175,14 +221,30 @@ export function AdminProductForm({
         >
           <ArrowLeft size={15} aria-hidden="true" /> До списку товарів
         </Link>
-        <Button
-          type="submit"
-          loading={saving}
-          loadingLabel="Зберігаємо товар"
-          size="lg"
-        >
-          Зберегти товар
-        </Button>
+        <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center">
+          {draft.id ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="lg"
+              loading={posting}
+              loadingLabel="Публікуємо в каналі"
+              disabled={saving}
+              onClick={() => void postToChannel()}
+            >
+              <Send size={15} aria-hidden="true" /> Опублікувати в каналі
+            </Button>
+          ) : null}
+          <Button
+            type="submit"
+            loading={saving}
+            loadingLabel="Зберігаємо товар"
+            size="lg"
+            disabled={posting}
+          >
+            Зберегти товар
+          </Button>
+        </div>
       </div>
     </form>
   );

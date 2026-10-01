@@ -3,6 +3,7 @@
 import { CheckCircle2, CircleAlert, ExternalLink, Send } from "lucide-react";
 import { useState } from "react";
 import { Button, buttonClasses } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { adminTelegramApi } from "@/lib/api/admin";
 import { errorMessage } from "@/lib/api/client";
 import type { TelegramStatus } from "@/lib/validators/telegram";
@@ -46,6 +47,7 @@ export function AdminTelegramSettings({
   const [busy, setBusy] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [ownerLink, setOwnerLink] = useState<string | null>(null);
+  const [channelName, setChannelName] = useState("");
 
   const refresh = async () => setStatus(await adminTelegramApi.status());
 
@@ -203,6 +205,84 @@ export function AdminTelegramSettings({
               Відкрити в Telegram <ExternalLink size={13} aria-hidden="true" />
             </a>
           ) : null}
+        </Step>
+
+        <Step done={Boolean(status.channel)} title="4. Канал із товарами">
+          {status.channel ? (
+            <p className="text-sm text-muted">
+              Підключено канал{" "}
+              {status.channel.username ? (
+                <a
+                  href={`https://t.me/${status.channel.username}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-medium text-accent hover:text-accent-hover"
+                >
+                  {status.channel.title || `@${status.channel.username}`}
+                </a>
+              ) : (
+                <span className="font-medium text-foreground">
+                  {status.channel.title}
+                </span>
+              )}
+              . Щойно новий товар опубліковано на сайті з фото, бот публікує
+              його в каналі: фото, ціна, розміри й посилання на сайт. Товари,
+              які вже були на сайті, публікуються кнопкою на сторінці товару.
+            </p>
+          ) : (
+            <p className="text-sm leading-6 text-muted">
+              Створіть у Telegram канал для покупців і додайте бота
+              {status.username ? ` @${status.username}` : ""} його
+              адміністратором із правом публікувати повідомлення. Потім вкажіть
+              канал тут — нові товари з’являтимуться в ньому автоматично.
+            </p>
+          )}
+          <form
+            className="flex flex-wrap items-end gap-2"
+            onSubmit={(event) => {
+              event.preventDefault();
+              void run("channel", async () => {
+                await adminTelegramApi.connectChannel(channelName);
+                setChannelName("");
+              });
+            }}
+          >
+            <div className="min-w-56 flex-1 sm:max-w-xs">
+              <Input
+                id="telegram-channel"
+                label={status.channel ? "Інший канал" : "Канал"}
+                placeholder="@назва або t.me/назва"
+                value={channelName}
+                onChange={(event) => setChannelName(event.target.value)}
+                disabled={!status.configured}
+              />
+            </div>
+            <Button
+              type="submit"
+              variant={status.channel ? "outline" : "primary"}
+              disabled={!status.configured || !channelName.trim()}
+              loading={busy === "channel"}
+            >
+              {status.channel ? "Змінити канал" : "Підключити канал"}
+            </Button>
+            {status.channel ? (
+              <Button
+                type="button"
+                variant="ghost"
+                className="text-muted hover:text-danger"
+                loading={busy === "channel-off"}
+                onClick={() => {
+                  if (
+                    window.confirm("Перестати публікувати товари в каналі?")
+                  ) {
+                    void run("channel-off", adminTelegramApi.disconnectChannel);
+                  }
+                }}
+              >
+                Відключити
+              </Button>
+            ) : null}
+          </form>
         </Step>
       </ol>
 

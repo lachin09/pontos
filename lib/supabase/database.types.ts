@@ -398,6 +398,7 @@ export type Database = {
           translations: Json;
           care_instructions: string;
           category_id: string;
+          channel_post_pending: boolean;
           composition: string;
           created_at: string;
           description: string;
@@ -417,6 +418,7 @@ export type Database = {
           translations?: Json;
           care_instructions?: string;
           category_id: string;
+          channel_post_pending?: boolean;
           composition?: string;
           created_at?: string;
           description?: string;
@@ -436,6 +438,7 @@ export type Database = {
           translations?: Json;
           care_instructions?: string;
           category_id?: string;
+          channel_post_pending?: boolean;
           composition?: string;
           created_at?: string;
           description?: string;

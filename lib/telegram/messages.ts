@@ -24,7 +24,8 @@ export function escape(text: string) {
     .replace(/>/g, "&gt;");
 }
 
-const money = (amount: number) => formatPrice(amount).replace(/\s/g, " ");
+export const money = (amount: number) =>
+  formatPrice(amount).replace(/\s/g, " ");
 
 function orderLines(order: NotifiableOrder, locale: Locale = "uk") {
   const t = customerTexts(locale);

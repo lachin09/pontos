@@ -15,13 +15,25 @@ export const GET = adminRoute(async (request, { services }) =>
 );
 
 const actionSchema = z.object({
-  action: z.enum(["connect-webhook", "owner-link", "disconnect-owners"]),
+  action: z.enum([
+    "connect-webhook",
+    "owner-link",
+    "disconnect-owners",
+    "connect-channel",
+    "disconnect-channel",
+  ]),
+  /** For "connect-channel": the channel's @name, t.me link or numeric id. */
+  channel: z.string().max(200).optional(),
 });
 
-export const POST = adminRoute(async (request) => {
-  const { action } = await readJson(request, actionSchema, {
+export const POST = adminRoute(async (request, { services }) => {
+  const { action, channel } = await readJson(request, actionSchema, {
     message: "Некоректний запит.",
   });
+  if (action === "disconnect-channel") {
+    await services.channel.disconnect();
+    return json({ ok: true });
+  }
   const telegram = getTelegramBot();
   const notifier = getOrderNotifier();
   if (!telegram || !notifier) {
@@ -41,6 +53,10 @@ export const POST = adminRoute(async (request) => {
     }
     if (action === "owner-link") {
       return json({ url: await notifier.createOwnerConnectLink() });
+    }
+    if (action === "connect-channel") {
+      await services.channel.connect(channel ?? "");
+      return json({ ok: true });
     }
     await notifier.disconnectOwners();
     return json({ ok: true });

@@ -19,6 +19,35 @@ export const EMPTY_TELEGRAM_SETTINGS: TelegramSettings = {
   connectCode: null,
 };
 
+export const TELEGRAM_CHANNEL_SETTING_KEY = "telegram_channel";
+
+/** The channel (or group) where new products are posted; null when none. */
+export const telegramChannelSchema = z
+  .object({
+    chatId: z.number().int(),
+    title: z.string(),
+    /** The public @username without the @; null for a private channel. */
+    username: z.string().nullable(),
+  })
+  .nullable();
+
+export type TelegramChannel = z.infer<typeof telegramChannelSchema>;
+
+/**
+ * What an admin may type to name their channel: "@pontos", "t.me/pontos" or
+ * "https://t.me/pontos" become "@pontos"; a private channel is named by its
+ * numeric id ("-1001234567890"). Invite links cannot be used: null.
+ */
+export function parseChatReference(input: string): string | number | null {
+  const value = input.trim();
+  if (/^-?\d{5,15}$/.test(value)) return Number(value);
+  const name = value
+    .replace(/^(https?:\/\/)?(t|telegram)\.me\//i, "")
+    .replace(/^@/, "")
+    .replace(/\/$/, "");
+  return /^[a-z][a-z0-9_]{3,31}$/i.test(name) ? `@${name}` : null;
+}
+
 /** The part of a Telegram update the bot reacts to. Unknown fields are dropped. */
 export const telegramUpdateSchema = z.object({
   message: z
@@ -64,4 +93,5 @@ export type TelegramStatus = {
   webhookConnected: boolean;
   webhookError: string | null;
   ownerChats: number;
+  channel: { title: string; username: string | null } | null;
 };

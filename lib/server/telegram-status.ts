@@ -10,12 +10,15 @@ export function telegramWebhookUrl(fallbackOrigin: string) {
 
 /** Everything the admin Telegram page needs to show the setup steps. */
 export async function getTelegramStatus(
-  settings: Pick<SettingsService, "getTelegramSettings">,
+  settings: Pick<SettingsService, "getTelegramSettings" | "getTelegramChannel">,
   fallbackOrigin: string,
 ): Promise<TelegramStatus> {
   const telegram = getTelegramBot();
   const webhookUrl = telegramWebhookUrl(fallbackOrigin);
-  const { ownerChatIds } = await settings.getTelegramSettings();
+  const [{ ownerChatIds }, channel] = await Promise.all([
+    settings.getTelegramSettings(),
+    settings.getTelegramChannel(),
+  ]);
   const status: TelegramStatus = {
     configured: Boolean(telegram),
     username: null,
@@ -23,6 +26,7 @@ export async function getTelegramStatus(
     webhookConnected: false,
     webhookError: null,
     ownerChats: ownerChatIds.length,
+    channel: channel && { title: channel.title, username: channel.username },
   };
   if (!telegram) return status;
   try {

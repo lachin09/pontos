@@ -11,6 +11,19 @@ export type WebhookInfo = {
   lastErrorMessage: string | null;
 };
 
+/** A channel or group, and whether the bot is allowed to post there. */
+export type TelegramChat = {
+  id: number;
+  type: "private" | "group" | "supergroup" | "channel";
+  title: string;
+  /** The public @username without the @; null for private chats. */
+  username: string | null;
+  canPost: boolean;
+};
+
+/** Telegram shows at most this many photos in one album. */
+export const MAX_ALBUM_PHOTOS = 10;
+
 /** What the app needs from Telegram. Services depend on this, not on HTTP. */
 export interface TelegramBot {
   /** Sends HTML-formatted text; `buttons` are rows of link buttons. */
@@ -44,6 +57,17 @@ export interface TelegramBot {
     captionHtml: string,
     buttons?: InlineButton[][],
   ): Promise<void>;
+  /**
+   * Posts photos by their public URLs with one caption: a single photo, or
+   * an album of the first `MAX_ALBUM_PHOTOS`.
+   */
+  sendPhotos(
+    chatId: number,
+    photoUrls: string[],
+    captionHtml: string,
+  ): Promise<void>;
+  /** Looks a chat up by "@username" or numeric id. */
+  getChat(chat: string | number): Promise<TelegramChat>;
   /** Shows a short notice to whoever pressed a button (required by Telegram). */
   answerCallback(callbackId: string, text?: string): Promise<void>;
   /** The bot's @username without the @, used to build t.me links. */
@@ -102,7 +126,12 @@ export function createTelegramBot(
   token: string,
   fetchImpl: typeof fetch = fetch,
 ): TelegramBot {
-  let username: string | null = null;
+  let me: { id: number; username: string } | null = null;
+
+  async function getMe() {
+    me ??= await call<{ id: number; username: string }>("getMe");
+    return me;
+  }
 
   async function call<T>(method: string, body?: unknown): Promise<T> {
     const response = await fetchImpl(
@@ -194,6 +223,64 @@ export function createTelegramBot(
         ...keyboard(buttons),
       });
     },
+    async sendPhotos(chatId, photoUrls, captionHtml) {
+      const [first, ...rest] = photoUrls.slice(0, MAX_ALBUM_PHOTOS);
+      if (rest.length === 0) {
+        await call("sendPhoto", {
+          chat_id: chatId,
+          photo: first,
+          caption: captionHtml,
+          parse_mode: "HTML",
+        });
+        return;
+      }
+      // An album shows the caption of its first photo under the whole group.
+      await call("sendMediaGroup", {
+        chat_id: chatId,
+        media: [
+          {
+            type: "photo",
+            media: first,
+            caption: captionHtml,
+            parse_mode: "HTML",
+          },
+          ...rest.map((url) => ({ type: "photo", media: url })),
+        ],
+      });
+    },
+    async getChat(chat) {
+      const info = await call<{
+        id: number;
+        type: TelegramChat["type"];
+        title?: string;
+        username?: string;
+      }>("getChat", { chat_id: chat });
+      let canPost = false;
+      try {
+        const member = await call<{
+          status: string;
+          can_post_messages?: boolean;
+        }>("getChatMember", {
+          chat_id: info.id,
+          user_id: (await getMe()).id,
+        });
+        canPost =
+          info.type === "channel"
+            ? member.status === "administrator" &&
+              member.can_post_messages === true
+            : member.status === "administrator" || member.status === "member";
+      } catch (error) {
+        // Telegram hides a channel's members from bots that are not its admins.
+        if (!(error instanceof TelegramError)) throw error;
+      }
+      return {
+        id: info.id,
+        type: info.type,
+        title: info.title ?? "",
+        username: info.username ?? null,
+        canPost,
+      };
+    },
     async answerCallback(callbackId, text) {
       await call("answerCallbackQuery", {
         callback_query_id: callbackId,
@@ -201,8 +288,7 @@ export function createTelegramBot(
       });
     },
     async getUsername() {
-      username ??= (await call<{ username: string }>("getMe")).username;
-      return username;
+      return (await getMe()).username;
     },
     async setWebhook(url, secret) {
       await call("setWebhook", {

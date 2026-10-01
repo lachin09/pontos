@@ -6,6 +6,7 @@ import { PG, translateDbError } from "@/lib/supabase/db-error";
 import type { ImageStorage } from "@/lib/storage/image-storage";
 import type {
   AdminProductDetails,
+  ChannelPostRepository,
   ProductAdminRepository,
   ProductImageRecord,
   ProductImageRepository,
@@ -167,6 +168,41 @@ export function createSupabaseProductAdminRepository(
           "Admin product delete failed",
         );
       }
+    },
+  };
+}
+
+export function createSupabaseChannelPostRepository(
+  client: SupabaseClient<Database>,
+): ChannelPostRepository {
+  return {
+    async claim(productId) {
+      // One conditional update, so two saves at once cannot both claim it.
+      const { data, error } = await client
+        .from("products")
+        .update({ channel_post_pending: false })
+        .eq("id", productId)
+        .eq("channel_post_pending", true)
+        .select("id");
+      if (error) throw error;
+      return data.length > 0;
+    },
+
+    async release(productId) {
+      const { error } = await client
+        .from("products")
+        .update({ channel_post_pending: true })
+        .eq("id", productId);
+      if (error) throw error;
+    },
+
+    async skipPublished() {
+      const { error } = await client
+        .from("products")
+        .update({ channel_post_pending: false })
+        .eq("is_published", true)
+        .eq("channel_post_pending", true);
+      if (error) throw error;
     },
   };
 }

@@ -81,6 +81,16 @@ export const adminProductsApi = {
       method: "DELETE",
       fallbackError: "Не вдалося видалити зображення.",
     }),
+  /**
+   * Posts the product to the Telegram channel. Without `force` only a
+   * product that is live and was never announced is posted.
+   */
+  postToChannel: (id: string, { force }: { force: boolean }) =>
+    apiRequest<{ posted: boolean }>(`/api/admin/products/${id}/channel-post`, {
+      method: "POST",
+      body: { force },
+      fallbackError: "Не вдалося опублікувати товар у Telegram-каналі.",
+    }),
 };
 
 export const adminCategoriesApi = {
@@ -178,5 +188,17 @@ export const adminTelegramApi = {
       method: "POST",
       body: { action: "disconnect-owners" },
       fallbackError: "Не вдалося відключити чати.",
+    }),
+  connectChannel: (channel: string) =>
+    apiRequest("/api/admin/telegram", {
+      method: "POST",
+      body: { action: "connect-channel", channel },
+      fallbackError: "Не вдалося підключити канал.",
+    }),
+  disconnectChannel: () =>
+    apiRequest("/api/admin/telegram", {
+      method: "POST",
+      body: { action: "disconnect-channel" },
+      fallbackError: "Не вдалося відключити канал.",
     }),
 };
