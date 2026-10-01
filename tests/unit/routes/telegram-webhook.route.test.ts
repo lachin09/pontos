@@ -35,7 +35,7 @@ describe("POST /api/telegram/webhook", () => {
     const response = await send(webhookSecretFor("123:test-token"));
     expect(response.status).toBe(200);
     expect(handleUpdate).toHaveBeenCalledWith({
-      message: { chat: { id: 42 }, text: "/start" },
+      message: { message_id: 5, chat: { id: 42 }, text: "/start" },
     });
   });
 

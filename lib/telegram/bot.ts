@@ -26,6 +26,24 @@ export interface TelegramBot {
     html: string,
     buttons?: InlineButton[][],
   ): Promise<void>;
+  /** Replaces the caption and buttons of a photo/file message the bot sent. */
+  editCaption(
+    chatId: number,
+    messageId: number,
+    html: string,
+    buttons?: InlineButton[][],
+  ): Promise<void>;
+  /**
+   * Copies a user's message (e.g. a receipt photo) into another chat with a
+   * new caption, without the "forwarded from" header.
+   */
+  copyMessage(
+    toChatId: number,
+    fromChatId: number,
+    messageId: number,
+    captionHtml: string,
+    buttons?: InlineButton[][],
+  ): Promise<void>;
   /** Shows a short notice to whoever pressed a button (required by Telegram). */
   answerCallback(callbackId: string, text?: string): Promise<void>;
   /** The bot's @username without the @, used to build t.me links. */
@@ -144,6 +162,37 @@ export function createTelegramBot(
         }
         throw error;
       }
+    },
+    async editCaption(chatId, messageId, html, buttons) {
+      try {
+        await call("editMessageCaption", {
+          chat_id: chatId,
+          message_id: messageId,
+          caption: html,
+          parse_mode: "HTML",
+          reply_markup: keyboard(buttons).reply_markup ?? {
+            inline_keyboard: [],
+          },
+        });
+      } catch (error) {
+        if (
+          error instanceof TelegramError &&
+          error.message.includes("message is not modified")
+        ) {
+          return;
+        }
+        throw error;
+      }
+    },
+    async copyMessage(toChatId, fromChatId, messageId, captionHtml, buttons) {
+      await call("copyMessage", {
+        chat_id: toChatId,
+        from_chat_id: fromChatId,
+        message_id: messageId,
+        caption: captionHtml,
+        parse_mode: "HTML",
+        ...keyboard(buttons),
+      });
     },
     async answerCallback(callbackId, text) {
       await call("answerCallbackQuery", {

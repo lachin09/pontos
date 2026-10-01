@@ -73,7 +73,8 @@ describe("POST /api/orders", () => {
       paymentStatus: "cash_on_delivery",
       telegramUrl: "https://t.me/pontos_bot?start=o_abc",
     });
-    expect(place).toHaveBeenCalledWith(order, KEY);
+    // The language defaults to Ukrainian when the client sends none.
+    expect(place).toHaveBeenCalledWith({ ...order, locale: "uk" }, KEY);
     expect(revalidateTag).toHaveBeenCalledWith("products", "max");
     expect(notifyNewOrder).toHaveBeenCalledWith(1042);
   });

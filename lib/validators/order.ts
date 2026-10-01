@@ -1,8 +1,11 @@
 import { z } from "zod";
+import { LOCALES } from "@/lib/i18n/config";
 import { checkoutSchema } from "@/lib/validators/checkout";
 
 export const createOrderSchema = z.object({
   customer: checkoutSchema,
+  /** The storefront language at checkout; Telegram talks to the customer in it. */
+  locale: z.enum(LOCALES).default("uk"),
   items: z
     .array(
       z.object({

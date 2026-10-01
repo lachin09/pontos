@@ -1,18 +1,20 @@
 import { getCountryName } from "@/lib/constants/countries";
-import type { OrderStatus } from "@/lib/constants/order";
 import {
-  DELIVERY_METHOD_LABELS,
   ORDER_STATUS_LABELS,
   PAYMENT_METHOD_LABELS,
   PAYMENT_STATUS_LABELS,
 } from "@/lib/constants/order-labels";
+import type { Locale } from "@/lib/i18n/config";
+import { fill, getDictionary } from "@/lib/i18n/dictionaries";
+import { customerTexts } from "@/lib/telegram/customer-texts";
 import { formatPrice } from "@/lib/utils/format";
 import type { NotifiableOrder } from "@/types/order";
 
 /**
  * Telegram message texts (HTML parse mode). Pure functions, so wording can
  * change without touching the sending logic. Everything that came from a
- * customer or admin goes through `escape`.
+ * customer or admin goes through `escape`. Customer messages follow the
+ * order's language; owner messages are Ukrainian.
  */
 
 export function escape(text: string) {
@@ -24,7 +26,9 @@ export function escape(text: string) {
 
 const money = (amount: number) => formatPrice(amount).replace(/\s/g, " ");
 
-function orderLines(order: NotifiableOrder) {
+function orderLines(order: NotifiableOrder, locale: Locale = "uk") {
+  const t = customerTexts(locale);
+  const labels = getDictionary(locale).checkout;
   const items = order.items.map(
     (item) =>
       `• ${escape(item.productName)} — ${escape(item.color)}, ${escape(item.size)} × ${item.quantity} — ${money(item.subtotal)}`,
@@ -32,18 +36,21 @@ function orderLines(order: NotifiableOrder) {
   const country =
     order.deliveryCountryCode === "UA"
       ? ""
-      : `, ${escape(getCountryName(order.deliveryCountryCode))}`;
+      : `, ${escape(getCountryName(order.deliveryCountryCode, locale))}`;
   return [
     ...items,
     "",
-    `Разом за товари: <b>${money(order.subtotal)}</b>`,
-    `Доставка: ${DELIVERY_METHOD_LABELS[order.deliveryMethod]} · ${escape(order.deliveryAddress)}, ${escape(order.city)}${country}`,
-    `Оплата: ${PAYMENT_METHOD_LABELS[order.paymentMethod]}`,
+    `${t.itemsTotal}: <b>${money(order.subtotal)}</b>`,
+    `${t.delivery}: ${labels.deliveryMethods[order.deliveryMethod]} · ${escape(order.deliveryAddress)}, ${escape(order.city)}${country}`,
+    `${t.payment}: ${labels.paymentMethods[order.paymentMethod]}`,
   ].join("\n");
 }
 
-function bankDetailsBlock(bankDetails: string) {
-  return `\n\n<b>Реквізити для оплати</b>\n${escape(bankDetails)}\nУ призначенні платежу вкажіть: замовлення №`;
+/** Bank details plus how to reference the order and send the receipt. */
+function bankDetailsBlock(order: NotifiableOrder, bankDetails: string) {
+  const t = customerTexts(order.locale);
+  const purpose = fill(t.bankPurpose, { number: order.orderNumber });
+  return `\n\n<b>${t.bankTitle}</b>\n${escape(bankDetails)}\n${purpose}\n\n${t.receiptAsk}`;
 }
 
 /** Whether the customer should see the bank details now. */
@@ -59,27 +66,21 @@ export function customerLinkedMessage(
   order: NotifiableOrder,
   bankDetails: string,
 ) {
+  const t = customerTexts(order.locale);
   const intro =
     order.status === "new"
-      ? "Ми отримали ваше замовлення й зателефонуємо, щоб його підтвердити. Тут ви отримуватимете оновлення статусу."
-      : `Статус: ${STATUS_TEXT[order.status] ?? order.status}`;
+      ? t.introNew
+      : `${t.status}: ${t.statuses[order.status] ?? ORDER_STATUS_LABELS[order.status]}`;
   const details =
     bankDetails && needsBankDetails(order)
-      ? bankDetailsBlock(bankDetails) + order.orderNumber
+      ? bankDetailsBlock(order, bankDetails)
       : "";
-  return `<b>Дякуємо, ${escape(order.firstName)}! Замовлення №${order.orderNumber}</b>\n${intro}\n\n${orderLines(order)}${details}`;
+  const thanks = fill(t.thanks, {
+    name: escape(order.firstName),
+    number: order.orderNumber,
+  });
+  return `<b>${thanks}</b>\n${intro}\n\n${orderLines(order, order.locale)}${details}`;
 }
-
-const STATUS_TEXT: Partial<Record<OrderStatus, string>> = {
-  confirmed: "Замовлення підтверджено ✅",
-  payment_pending: "Очікуємо на оплату.",
-  paid: "Оплату отримано, дякуємо!",
-  processing: "Готуємо замовлення до відправки.",
-  shipped: "Замовлення відправлено 🚚",
-  delivered: "Замовлення доставлено. Дякуємо, що обрали PONTOS!",
-  cancelled:
-    "Замовлення скасовано. Якщо це помилка — напишіть або зателефонуйте нам.",
-};
 
 /**
  * The customer's update after an admin change, or null when the change is
@@ -90,17 +91,50 @@ export function statusChangedMessage(
   changed: { status: boolean; paymentStatus: boolean },
   bankDetails: string,
 ): string | null {
+  const t = customerTexts(order.locale);
   let text: string | undefined;
-  if (changed.status) text = STATUS_TEXT[order.status];
+  if (changed.status) text = t.statuses[order.status];
   if (!text && changed.paymentStatus && order.paymentStatus === "paid") {
-    text = STATUS_TEXT.paid;
+    text = t.statuses.paid;
   }
   if (!text) return null;
   const details =
     changed.status && bankDetails && needsBankDetails(order)
-      ? bankDetailsBlock(bankDetails) + order.orderNumber
+      ? bankDetailsBlock(order, bankDetails)
       : "";
-  return `<b>Замовлення №${order.orderNumber}</b>\n${text}${details}`;
+  return `<b>${orderTitle(order)}</b>\n${text}${details}`;
+}
+
+/** "Замовлення №1042" in the customer's language, without the greeting. */
+function orderTitle(order: NotifiableOrder) {
+  const t = customerTexts(order.locale);
+  return fill(t.thanks, { name: "", number: order.orderNumber }).replace(
+    /^[^!]*!\s*/,
+    "",
+  );
+}
+
+/** After a customer sent a photo or file: did it reach an order? */
+export function receiptReceivedMessage(order: NotifiableOrder) {
+  const t = customerTexts(order.locale);
+  return `<b>${orderTitle(order)}</b>\n${t.receiptReceived}`;
+}
+
+export function receiptNoOrderMessage(locale: Locale, phone: string) {
+  const t = customerTexts(locale);
+  return phone
+    ? fill(t.receiptNoOrder, { phone: escape(phone) })
+    : t.helpNoPhone;
+}
+
+/** Caption for the receipt copied to the owner, with its live status line. */
+export function ownerReceiptMessage(order: NotifiableOrder, note?: string) {
+  const status = `\n\n<b>Статус:</b> ${ORDER_STATUS_LABELS[order.status]} · ${PAYMENT_STATUS_LABELS[order.paymentStatus]}`;
+  return (
+    `💳 <b>Квитанція до замовлення №${order.orderNumber}</b>\n${escape(order.firstName)} ${escape(order.lastName)} · ${escape(order.phone)}\nСума: <b>${money(order.subtotal)}</b> · ${PAYMENT_METHOD_LABELS[order.paymentMethod]}` +
+    status +
+    (note ? `\n<i>${escape(note)}</i>` : "")
+  );
 }
 
 /** The owner's order card: the alert plus a live status line. */
@@ -113,19 +147,24 @@ export function ownerOrderMessage(order: NotifiableOrder, note?: string) {
   );
 }
 
+const CUSTOMER_LANGUAGE: Record<Locale, string> = {
+  uk: "",
+  ru: "\nМова клієнта: російська",
+  en: "\nМова клієнта: англійська",
+};
+
 export function ownerNewOrderMessage(order: NotifiableOrder) {
   const comment = order.comment ? `\nКоментар: ${escape(order.comment)}` : "";
-  return `🛍 <b>Нове замовлення №${order.orderNumber}</b>\n${escape(order.firstName)} ${escape(order.lastName)} · ${escape(order.phone)}${comment}\n\n${orderLines(order)}`;
+  return `🛍 <b>Нове замовлення №${order.orderNumber}</b>\n${escape(order.firstName)} ${escape(order.lastName)} · ${escape(order.phone)}${CUSTOMER_LANGUAGE[order.locale]}${comment}\n\n${orderLines(order)}`;
 }
 
-export const WELCOME_MESSAGE =
-  "Вітаємо в PONTOS! 👋\nЦей бот надсилає підтвердження та статус замовлень. Щоб підключити замовлення, натисніть кнопку «Отримати підтвердження в Telegram» після оформлення на сайті.";
+export const welcomeMessage = (locale: Locale) => customerTexts(locale).welcome;
 
-export const ORDER_LINK_INVALID =
-  "Не вдалося знайти це замовлення. Відкрийте посилання з сайту ще раз або зв’яжіться з нами.";
+export const orderLinkInvalidMessage = (locale: Locale) =>
+  customerTexts(locale).orderLinkInvalid;
 
-export const ORDER_LINK_TAKEN =
-  "Це замовлення вже підключене до іншого чату. Якщо це ваше замовлення — зв’яжіться з нами.";
+export const orderLinkTakenMessage = (locale: Locale) =>
+  customerTexts(locale).orderLinkTaken;
 
 export const OWNER_CONNECTED =
   "✅ Цей чат підключено до сповіщень про нові замовлення PONTOS.";
@@ -133,8 +172,7 @@ export const OWNER_CONNECTED =
 export const OWNER_LINK_INVALID =
   "Посилання для підключення застаріло. Створіть нове в адмінпанелі.";
 
-export function helpMessage(phone: string) {
-  return phone
-    ? `Питання щодо замовлення? Зателефонуйте нам: ${escape(phone)}`
-    : "Питання щодо замовлення? Напишіть нам через сайт — кнопка «Контакти».";
+export function helpMessage(phone: string, locale: Locale = "uk") {
+  const t = customerTexts(locale);
+  return phone ? fill(t.help, { phone: escape(phone) }) : t.helpNoPhone;
 }

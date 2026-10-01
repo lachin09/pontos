@@ -30,6 +30,8 @@ function setup({
   const answers: { id: string; text?: string }[] = [];
   const statusCalls: { orderId: string; statuses: unknown; chatId: number }[] =
     [];
+  const copies: (Sent & { fromChatId: number; messageId: number })[] = [];
+  const captions: (Sent & { messageId: number })[] = [];
   let telegramSettings = { ...telegram };
 
   const repo: OrderNotificationRepository = {
@@ -40,6 +42,25 @@ function setup({
       [...orders.values()].find((o) => o.publicToken === t) ?? null,
     async setTelegramChat(id, chatId) {
       orders.get(id)!.telegramChatId = chatId;
+    },
+    async findAwaitingPaymentByChat(chatId) {
+      return (
+        [...orders.values()]
+          .filter(
+            (o) =>
+              o.telegramChatId === chatId &&
+              o.paymentMethod === "bank_transfer" &&
+              o.paymentStatus !== "paid" &&
+              o.status !== "cancelled",
+          )
+          .sort((a, b) => b.orderNumber - a.orderNumber)[0] ?? null
+      );
+    },
+    async markReceiptSent(id) {
+      const current = orders.get(id);
+      if (current?.paymentStatus === "pending") {
+        current.paymentStatus = "awaiting_confirmation";
+      }
     },
     async updateStatusFromTelegram(orderId, statuses, chatId) {
       if (failStatusUpdate) throw new Error("permission denied");
@@ -57,6 +78,13 @@ function setup({
     },
     async editMessage(chatId, messageId, text, buttons) {
       edits.push({ chatId, messageId, text, buttons });
+    },
+    async editCaption(chatId, messageId, text, buttons) {
+      captions.push({ chatId, messageId, text, buttons });
+    },
+    async copyMessage(chatId, fromChatId, messageId, text, buttons) {
+      if (failSendTo.includes(chatId)) throw new Error("bot was blocked");
+      copies.push({ chatId, fromChatId, messageId, text, buttons });
     },
     async answerCallback(id, text) {
       answers.push({ id, text });
@@ -85,18 +113,35 @@ function setup({
     notifier,
     sent,
     edits,
+    copies,
+    captions,
     answers,
     statusCalls,
     order: () => orders.get(order.id)!,
     settings: () => telegramSettings,
-    message: (text: string, chatId = 555) =>
-      notifier.handleUpdate({ message: { chat: { id: chatId }, text } }),
-    press: (data: string, chatId = 777) =>
+    message: (text: string, chatId = 555, languageCode?: string) =>
+      notifier.handleUpdate({
+        message: {
+          message_id: 1,
+          chat: { id: chatId },
+          from: languageCode ? { language_code: languageCode } : undefined,
+          text,
+        },
+      }),
+    photo: (chatId = 555, messageId = 42) =>
+      notifier.handleUpdate({
+        message: { message_id: messageId, chat: { id: chatId }, photo: [{}] },
+      }),
+    press: (data: string, chatId = 777, onReceipt = false) =>
       notifier.handleUpdate({
         callback_query: {
           id: "cb1",
           data,
-          message: { message_id: 9, chat: { id: chatId } },
+          message: {
+            message_id: 9,
+            chat: { id: chatId },
+            ...(onReceipt ? { photo: [{}] } : {}),
+          },
         },
       }),
   };
@@ -382,11 +427,91 @@ describe("order notifier", () => {
       expect(sent[1].text).toContain("+380971234567");
     });
 
+    it("follows the customer's Telegram language when there is no order", async () => {
+      const { message, sent } = setup();
+      await message("/start", 555, "en-GB");
+      await message("hello?", 555, "ru");
+      await message(`/start o_${"f".repeat(32)}`, 555, "en");
+      expect(sent[0].text).toContain("Welcome to PONTOS");
+      expect(sent[1].text).toContain("Позвоните нам: +380971234567");
+      expect(sent[2].text).toContain("could not find this order");
+    });
+
     it("ignores updates without text", async () => {
       const { notifier, sent } = setup();
       await notifier.handleUpdate({});
-      await notifier.handleUpdate({ message: { chat: { id: 1 } } });
+      await notifier.handleUpdate({ message: { message_id: 1, chat: { id: 1 } } });
       expect(sent).toEqual([]);
+    });
+  });
+
+  describe("payment receipts", () => {
+    const linked = () =>
+      makeNotifiableOrder({
+        status: "confirmed",
+        telegramChatId: 555,
+        locale: "en",
+      });
+
+    it("copies a customer's photo to the owners and confirms receipt", async () => {
+      const { photo, sent, copies, order } = setup({
+        order: linked(),
+        telegram: { ownerChatIds: [777, 778], connectCode: null },
+      });
+      await photo(555, 42);
+      expect(order().paymentStatus).toBe("awaiting_confirmation");
+      expect(copies.map((c) => c.chatId)).toEqual([777, 778]);
+      expect(copies[0]).toMatchObject({ fromChatId: 555, messageId: 42 });
+      expect(copies[0].text).toContain("Квитанція до замовлення №1042");
+      expect(copies[0].text).toContain("Очікує підтвердження");
+      expect(buttonTexts(copies[0].buttons)).toEqual([
+        ["💰 Оплату отримано", "❌ Скасувати"],
+        ["Відкрити в адмінці"],
+      ]);
+      expect(sent).toHaveLength(1);
+      expect(sent[0]).toMatchObject({ chatId: 555 });
+      expect(sent[0].text).toContain("We have received your receipt");
+    });
+
+    it("still thanks the customer when an owner chat is unreachable", async () => {
+      const { photo, sent, copies } = setup({
+        order: linked(),
+        telegram: { ownerChatIds: [777, 778], connectCode: null },
+        failSendTo: [777],
+      });
+      await photo();
+      expect(copies.map((c) => c.chatId)).toEqual([778]);
+      expect(sent[0].text).toContain("received your receipt");
+    });
+
+    it("explains when nothing awaits payment in this chat", async () => {
+      const { photo, sent, copies } = setup({
+        order: makeNotifiableOrder({ paymentMethod: "cash_on_delivery", telegramChatId: 555 }),
+        telegram: { ownerChatIds: [777], connectCode: null },
+      });
+      await photo(555);
+      await photo(999);
+      expect(copies).toEqual([]);
+      expect(sent).toHaveLength(2);
+      expect(sent[0].text).toContain("Не знайшли замовлення, яке очікує оплати");
+      expect(sent[0].text).toContain("+380971234567");
+    });
+
+    it("lets the owner mark the receipt as paid under the photo", async () => {
+      const { photo, press, captions, edits, sent, order, answers } = setup({
+        order: linked(),
+        telegram: { ownerChatIds: [777], connectCode: null },
+      });
+      await photo();
+      await press(`o:p:${ID_HEX}`, 777, true);
+      expect(order()).toMatchObject({ status: "paid", paymentStatus: "paid" });
+      expect(edits).toEqual([]);
+      expect(captions).toHaveLength(1);
+      expect(captions[0].text).toContain("Оплачене · Оплачене");
+      expect(captions[0].text).toContain("Змінено в Telegram");
+      expect(answers.at(-1)?.text).toContain("Готово");
+      // The customer hears it in their language.
+      expect(sent.at(-1)?.text).toContain("Thank you, payment received!");
     });
   });
 });

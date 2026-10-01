@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { conflict } from "@/lib/errors";
+import { isLocale } from "@/lib/i18n/config";
 import type { Database } from "@/lib/supabase/database.types";
 import { PG } from "@/lib/supabase/db-error";
 import { PRODUCT_IMAGES_BUCKET } from "@/lib/storage/image-storage";
@@ -15,7 +16,7 @@ export function createSupabaseOrderPlacementRepository(
   client: SupabaseClient<Database>,
 ): OrderPlacementRepository {
   return {
-    async place({ customer, items }, idempotencyKey) {
+    async place({ customer, locale, items }, idempotencyKey) {
       const { data, error } = await client.rpc("create_order_secure", {
         p_idempotency_key: idempotencyKey,
         p_customer: {
@@ -33,6 +34,7 @@ export function createSupabaseOrderPlacementRepository(
           nova_poshta_division_category: null,
           payment_method: customer.paymentMethod,
           comment: customer.comment,
+          locale,
         },
         p_items: items.map((item) => ({
           variant_id: item.variantId,
@@ -176,7 +178,7 @@ export function createSupabaseOrderAdminRepository(
 }
 
 const notifiableColumns =
-  "id, order_number, public_token, first_name, last_name, phone, city, delivery_country_code, delivery_method, delivery_address, payment_method, payment_status, status, comment, subtotal, telegram_chat_id, order_items(product_name, size, color, quantity, subtotal)";
+  "id, order_number, public_token, first_name, last_name, phone, city, delivery_country_code, delivery_method, delivery_address, payment_method, payment_status, status, comment, subtotal, telegram_chat_id, locale, order_items(product_name, size, color, quantity, subtotal)";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -184,6 +186,60 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 export function createSupabaseOrderNotificationRepository(
   client: SupabaseClient<Database>,
 ): OrderNotificationRepository {
+  type Row = {
+    id: string;
+    order_number: number;
+    public_token: string;
+    first_name: string;
+    last_name: string;
+    phone: string;
+    city: string;
+    delivery_country_code: string;
+    delivery_method: NotifiableOrder["deliveryMethod"];
+    delivery_address: string;
+    payment_method: NotifiableOrder["paymentMethod"];
+    payment_status: NotifiableOrder["paymentStatus"];
+    status: NotifiableOrder["status"];
+    comment: string | null;
+    subtotal: number;
+    telegram_chat_id: number | null;
+    locale: string;
+    order_items: {
+      product_name: string;
+      size: string;
+      color: string;
+      quantity: number;
+      subtotal: number | null;
+    }[];
+  };
+
+  const toNotifiable = (data: Row): NotifiableOrder => ({
+    id: data.id,
+    orderNumber: data.order_number,
+    publicToken: data.public_token,
+    firstName: data.first_name,
+    lastName: data.last_name,
+    phone: data.phone,
+    city: data.city,
+    deliveryCountryCode: data.delivery_country_code,
+    deliveryMethod: data.delivery_method,
+    deliveryAddress: data.delivery_address,
+    paymentMethod: data.payment_method,
+    paymentStatus: data.payment_status,
+    status: data.status,
+    comment: data.comment,
+    subtotal: Number(data.subtotal),
+    telegramChatId: data.telegram_chat_id,
+    locale: isLocale(data.locale) ? data.locale : "uk",
+    items: data.order_items.map((item) => ({
+      productName: item.product_name,
+      size: item.size,
+      color: item.color,
+      quantity: item.quantity,
+      subtotal: Number(item.subtotal ?? 0),
+    })),
+  });
+
   async function findOne(
     column: "id" | "order_number" | "public_token",
     value: string | number,
@@ -194,32 +250,7 @@ export function createSupabaseOrderNotificationRepository(
       .eq(column, value)
       .maybeSingle();
     if (error) throw error;
-    if (!data) return null;
-    return {
-      id: data.id,
-      orderNumber: data.order_number,
-      publicToken: data.public_token,
-      firstName: data.first_name,
-      lastName: data.last_name,
-      phone: data.phone,
-      city: data.city,
-      deliveryCountryCode: data.delivery_country_code,
-      deliveryMethod: data.delivery_method,
-      deliveryAddress: data.delivery_address,
-      paymentMethod: data.payment_method,
-      paymentStatus: data.payment_status,
-      status: data.status,
-      comment: data.comment,
-      subtotal: Number(data.subtotal),
-      telegramChatId: data.telegram_chat_id,
-      items: data.order_items.map((item) => ({
-        productName: item.product_name,
-        size: item.size,
-        color: item.color,
-        quantity: item.quantity,
-        subtotal: Number(item.subtotal),
-      })),
-    };
+    return data ? toNotifiable(data) : null;
   }
 
   return {
@@ -246,6 +277,28 @@ export function createSupabaseOrderNotificationRepository(
         .from("orders")
         .update({ telegram_chat_id: chatId })
         .eq("id", orderId);
+      if (error) throw error;
+    },
+    async findAwaitingPaymentByChat(chatId) {
+      const { data, error } = await client
+        .from("orders")
+        .select(notifiableColumns)
+        .eq("telegram_chat_id", chatId)
+        .eq("payment_method", "bank_transfer")
+        .in("payment_status", ["pending", "awaiting_confirmation"])
+        .neq("status", "cancelled")
+        .order("order_number", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? toNotifiable(data) : null;
+    },
+    async markReceiptSent(orderId) {
+      const { error } = await client
+        .from("orders")
+        .update({ payment_status: "awaiting_confirmation" })
+        .eq("id", orderId)
+        .eq("payment_status", "pending");
       if (error) throw error;
     },
   };

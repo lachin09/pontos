@@ -188,6 +188,7 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"];
           subtotal: number;
           telegram_chat_id: number | null;
+          locale: string;
           total: number;
           updated_at: string;
         };
@@ -215,6 +216,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"];
           subtotal: number;
           telegram_chat_id?: number | null;
+          locale?: string;
           total: number;
           updated_at?: string;
         };
@@ -242,6 +244,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"];
           subtotal?: number;
           telegram_chat_id?: number | null;
+          locale?: string;
           total?: number;
           updated_at?: string;
         };

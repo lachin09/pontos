@@ -81,6 +81,7 @@ export function makeNotifiableOrder(
     comment: null,
     subtotal: 3000,
     telegramChatId: null,
+    locale: "uk",
     items: [
       {
         productName: "Пальто",

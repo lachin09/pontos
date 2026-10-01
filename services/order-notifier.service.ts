@@ -1,17 +1,22 @@
 import { randomBytes } from "node:crypto";
 import type { OrderStatus, PaymentStatus } from "@/lib/constants/order";
+import type { Locale } from "@/lib/i18n/config";
 import { ORDER_STATUS_LABELS } from "@/lib/constants/order-labels";
 import type { InlineButton, TelegramBot } from "@/lib/telegram/bot";
+import { localeFromTelegram } from "@/lib/telegram/customer-texts";
 import {
   customerLinkedMessage,
   helpMessage,
-  ORDER_LINK_INVALID,
-  ORDER_LINK_TAKEN,
+  orderLinkInvalidMessage,
+  orderLinkTakenMessage,
   OWNER_CONNECTED,
   OWNER_LINK_INVALID,
   ownerOrderMessage,
+  ownerReceiptMessage,
+  receiptNoOrderMessage,
+  receiptReceivedMessage,
   statusChangedMessage,
-  WELCOME_MESSAGE,
+  welcomeMessage,
 } from "@/lib/telegram/messages";
 import {
   availableActions,
@@ -33,6 +38,7 @@ const MAX_OWNER_CHATS = 20;
 
 type Statuses = { status: OrderStatus; paymentStatus: PaymentStatus };
 type ButtonPress = NonNullable<TelegramUpdate["callback_query"]>;
+type Message = NonNullable<TelegramUpdate["message"]>;
 
 /** "0b6d3c54…" (32 hex) ⇄ "0b6d3c54-…" (UUID). Telegram start params can't hold dashes. */
 const compactToken = (uuid: string) => uuid.replace(/-/g, "");
@@ -69,12 +75,12 @@ export function createOrderNotifier(deps: {
 
   // ── Customer ────────────────────────────────────────────────────────────
 
-  async function linkOrder(chatId: number, hexToken: string) {
+  async function linkOrder(chatId: number, hexToken: string, locale: Locale) {
     const token = expandToken(hexToken);
     const order = token ? await orders.findByToken(token) : null;
-    if (!order) return bot.sendMessage(chatId, ORDER_LINK_INVALID);
+    if (!order) return bot.sendMessage(chatId, orderLinkInvalidMessage(locale));
     if (order.telegramChatId !== null && order.telegramChatId !== chatId) {
-      return bot.sendMessage(chatId, ORDER_LINK_TAKEN);
+      return bot.sendMessage(chatId, orderLinkTakenMessage(order.locale));
     }
     if (order.telegramChatId === null) {
       await orders.setTelegramChat(order.id, chatId);
@@ -95,6 +101,40 @@ export function createOrderNotifier(deps: {
     const { bankDetails } = await seller();
     const text = statusChangedMessage(order, changed, bankDetails);
     if (text) await bot.sendMessage(order.telegramChatId, text);
+  }
+
+  /**
+   * A photo or file from a customer is taken as the payment receipt for their
+   * latest unpaid transfer order: it is copied to the owner chats with a
+   * "paid" button, and the customer hears that it arrived.
+   */
+  async function receiveReceipt(message: Message, locale: Locale) {
+    const chatId = message.chat.id;
+    const order = await orders.findAwaitingPaymentByChat(chatId);
+    if (!order) {
+      const { phone } = await seller();
+      return bot.sendMessage(chatId, receiptNoOrderMessage(locale, phone));
+    }
+    await orders.markReceiptSent(order.id);
+    const current = (await orders.findById(order.id)) ?? order;
+    const { ownerChatIds } = await settings.getTelegramSettings();
+    const results = await Promise.allSettled(
+      ownerChatIds.map((ownerChatId) =>
+        bot.copyMessage(
+          ownerChatId,
+          chatId,
+          message.message_id,
+          ownerReceiptMessage(current),
+          ownerButtons(current),
+        ),
+      ),
+    );
+    for (const result of results) {
+      if (result.status === "rejected") {
+        console.error("Owner receipt copy failed", String(result.reason));
+      }
+    }
+    await bot.sendMessage(chatId, receiptReceivedMessage(current));
   }
 
   // ── Owner ───────────────────────────────────────────────────────────────
@@ -135,27 +175,32 @@ export function createOrderNotifier(deps: {
     return rows;
   }
 
-  const redraw = (
-    chatId: number,
-    messageId: number,
-    order: NotifiableOrder,
-    note?: string,
-  ) =>
-    bot.editMessage(
-      chatId,
-      messageId,
-      ownerOrderMessage(order, note),
-      ownerButtons(order),
-    );
+  type Card = { chatId: number; messageId: number; isReceipt: boolean };
+
+  /** Re-renders an owner card: an order alert, or the caption under a receipt. */
+  const redraw = (card: Card, order: NotifiableOrder, note?: string) =>
+    card.isReceipt
+      ? bot.editCaption(
+          card.chatId,
+          card.messageId,
+          ownerReceiptMessage(order, note),
+          ownerButtons(order),
+        )
+      : bot.editMessage(
+          card.chatId,
+          card.messageId,
+          ownerOrderMessage(order, note),
+          ownerButtons(order),
+        );
 
   async function applyOwnerAction(
-    press: { id: string; chatId: number; messageId: number },
+    press: { id: string } & Card,
     order: NotifiableOrder,
     action: OrderAction,
   ) {
     if (!availableActions(order).includes(action)) {
       // Stale button: the status changed since this card was drawn.
-      await redraw(press.chatId, press.messageId, order);
+      await redraw(press, order);
       return bot.answerCallback(
         press.id,
         `Статус уже змінено: ${ORDER_STATUS_LABELS[order.status]}`,
@@ -173,7 +218,7 @@ export function createOrderNotifier(deps: {
     const current = updated ? await orders.findById(order.id) : null;
     if (!current) return bot.answerCallback(press.id, "Замовлення не знайдено");
 
-    await redraw(press.chatId, press.messageId, current, "Змінено в Telegram");
+    await redraw(press, current, "Змінено в Telegram");
     await bot.answerCallback(
       press.id,
       `Готово: ${ORDER_STATUS_LABELS[current.status]}`,
@@ -188,6 +233,13 @@ export function createOrderNotifier(deps: {
     if (chatId === undefined || messageId === undefined) {
       return bot.answerCallback(callback.id);
     }
+    const card: Card = {
+      chatId,
+      messageId,
+      isReceipt: Boolean(
+        callback.message?.photo || callback.message?.document,
+      ),
+    };
     const { ownerChatIds } = await settings.getTelegramSettings();
     if (!ownerChatIds.includes(chatId)) {
       return bot.answerCallback(callback.id, "Немає доступу");
@@ -200,34 +252,39 @@ export function createOrderNotifier(deps: {
 
     try {
       if (parsed.kind === "back") {
-        await redraw(chatId, messageId, order);
+        await redraw(card, order);
         return bot.answerCallback(callback.id);
       }
       if (parsed.kind === "action" && parsed.action === "cancel") {
         // Cancelling asks for a second tap.
-        await bot.editMessage(
-          chatId,
-          messageId,
-          ownerOrderMessage(order, "Скасувати це замовлення?"),
+        const buttons = [
           [
-            [
-              {
-                text: "Так, скасувати",
-                callbackData: callbackData.confirmCancel(order.id),
-              },
-              { text: "↩︎ Назад", callbackData: callbackData.back(order.id) },
-            ],
+            {
+              text: "Так, скасувати",
+              callbackData: callbackData.confirmCancel(order.id),
+            },
+            { text: "↩︎ Назад", callbackData: callbackData.back(order.id) },
           ],
-        );
+        ];
+        const question = "Скасувати це замовлення?";
+        await (card.isReceipt
+          ? bot.editCaption(
+              chatId,
+              messageId,
+              ownerReceiptMessage(order, question),
+              buttons,
+            )
+          : bot.editMessage(
+              chatId,
+              messageId,
+              ownerOrderMessage(order, question),
+              buttons,
+            ));
         return bot.answerCallback(callback.id);
       }
       const action =
         parsed.kind === "confirm-cancel" ? "cancel" : parsed.action;
-      await applyOwnerAction(
-        { id: callback.id, chatId, messageId },
-        order,
-        action,
-      );
+      await applyOwnerAction({ id: callback.id, ...card }, order, action);
     } catch (error) {
       console.error(
         "Telegram owner action failed",
@@ -277,22 +334,33 @@ export function createOrderNotifier(deps: {
     async handleUpdate(update: TelegramUpdate) {
       if (update.callback_query) return handleOwnerPress(update.callback_query);
       const message = update.message;
-      const text = message?.text?.trim();
-      if (!message || !text) return;
+      if (!message) return;
       const chatId = message.chat.id;
+      // Without an order to go by, the customer's Telegram language decides.
+      const locale = localeFromTelegram(message.from?.language_code);
+
+      if (message.photo || message.document) {
+        return receiveReceipt(message, locale);
+      }
+      const text = message.text?.trim();
+      if (!text) return;
       const [command, payload = ""] = text.split(/\s+/, 2);
 
       if (command === "/start") {
         if (payload.startsWith(ORDER_START_PREFIX)) {
-          return linkOrder(chatId, payload.slice(ORDER_START_PREFIX.length));
+          return linkOrder(
+            chatId,
+            payload.slice(ORDER_START_PREFIX.length),
+            locale,
+          );
         }
         if (payload.startsWith(OWNER_START_PREFIX)) {
           return connectOwner(chatId, payload.slice(OWNER_START_PREFIX.length));
         }
-        return bot.sendMessage(chatId, WELCOME_MESSAGE);
+        return bot.sendMessage(chatId, welcomeMessage(locale));
       }
       const { phone } = await seller();
-      await bot.sendMessage(chatId, helpMessage(phone));
+      await bot.sendMessage(chatId, helpMessage(phone, locale));
     },
 
     /** A single-use link the owner opens to receive new-order cards. */

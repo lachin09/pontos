@@ -23,8 +23,13 @@ export const EMPTY_TELEGRAM_SETTINGS: TelegramSettings = {
 export const telegramUpdateSchema = z.object({
   message: z
     .object({
+      message_id: z.number().int(),
       chat: z.object({ id: z.number().int() }),
+      from: z.object({ language_code: z.string().optional() }).optional(),
       text: z.string().optional(),
+      /** A photo (sizes) or a file: how customers send payment receipts. */
+      photo: z.array(z.unknown()).optional(),
+      document: z.object({}).optional(),
     })
     .optional(),
   /** A press on one of the bot's buttons. */
@@ -36,6 +41,9 @@ export const telegramUpdateSchema = z.object({
         .object({
           message_id: z.number().int(),
           chat: z.object({ id: z.number().int() }),
+          /** Present on a copied receipt: its text lives in the caption. */
+          photo: z.array(z.unknown()).optional(),
+          document: z.object({}).optional(),
         })
         .optional(),
     })

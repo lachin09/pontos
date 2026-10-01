@@ -63,6 +63,7 @@ export function usePlaceOrder({ onPlaced }: { onPlaced: () => void }) {
         const placed = await ordersApi.place(
           {
             customer,
+            locale,
             items: items.map(({ variantId, quantity }) => ({
               variantId,
               quantity,

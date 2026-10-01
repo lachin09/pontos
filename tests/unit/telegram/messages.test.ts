@@ -5,7 +5,11 @@ import {
   helpMessage,
   needsBankDetails,
   ownerNewOrderMessage,
+  ownerReceiptMessage,
+  receiptNoOrderMessage,
+  receiptReceivedMessage,
   statusChangedMessage,
+  welcomeMessage,
 } from "@/lib/telegram/messages";
 import { makeNotifiableOrder } from "../../support/factories";
 
@@ -34,6 +38,31 @@ describe("customerLinkedMessage", () => {
     expect(
       customerLinkedMessage(makeNotifiableOrder({ status: "confirmed" }), BANK),
     ).toContain(`${BANK}\nУ призначенні платежу вкажіть: замовлення №1042`);
+  });
+
+  it("asks for the receipt along with the bank details", () => {
+    expect(
+      customerLinkedMessage(makeNotifiableOrder({ status: "confirmed" }), BANK),
+    ).toContain("надішліть, будь ласка, фото або скриншот квитанції");
+    expect(customerLinkedMessage(makeNotifiableOrder(), BANK)).not.toContain(
+      "квитанції",
+    );
+  });
+
+  it("writes to English and Russian customers in their language", () => {
+    const en = plain(
+      customerLinkedMessage(
+        makeNotifiableOrder({ status: "confirmed", locale: "en" }),
+        BANK,
+      ),
+    );
+    expect(en).toContain("Thank you, Олена! Order No. 1042");
+    expect(en).toContain("Delivery: Nova Poshta · Відділення №12, Київ");
+    expect(en).toContain("Payment reference: order No. 1042");
+    expect(en).toContain("send a photo or screenshot of the receipt");
+    const ru = plain(customerLinkedMessage(makeNotifiableOrder({ locale: "ru" }), ""));
+    expect(ru).toContain("Спасибо, Олена! Заказ №1042");
+    expect(ru).toContain("Мы получили ваш заказ");
   });
 
   it("names the country for international orders", () => {
@@ -112,8 +141,27 @@ describe("statusChangedMessage", () => {
       { status: false, paymentStatus: true },
       BANK,
     );
-    expect(text).toContain("Оплату отримано");
+    expect(text).toContain("оплату отримано");
+    expect(text).toContain("Відправимо ваше замовлення якнайшвидше");
     expect(text).not.toContain(BANK);
+  });
+
+  it("speaks the customer's language", () => {
+    const paid = { status: true, paymentStatus: true };
+    expect(
+      statusChangedMessage(
+        makeNotifiableOrder({ status: "paid", paymentStatus: "paid", locale: "en" }),
+        paid,
+        "",
+      ),
+    ).toContain("Order No. 1042</b>\nThank you, payment received!");
+    expect(
+      statusChangedMessage(
+        makeNotifiableOrder({ status: "shipped", locale: "ru" }),
+        statusOnly,
+        "",
+      ),
+    ).toContain("Заказ №1042</b>\nЗаказ отправлен");
   });
 
   it("stays silent for changes a customer doesn't need", () => {
@@ -144,8 +192,37 @@ describe("owner and help messages", () => {
     expect(text).toContain("Коментар: Дзвоніть після 18:00");
   });
 
+  it("tells the owner when the customer shops in another language", () => {
+    expect(ownerNewOrderMessage(makeNotifiableOrder({ locale: "en" }))).toContain(
+      "Мова клієнта: англійська",
+    );
+    expect(ownerNewOrderMessage(makeNotifiableOrder())).not.toContain("Мова");
+  });
+
+  it("captions a copied receipt for the owner in Ukrainian", () => {
+    const text = ownerReceiptMessage(
+      makeNotifiableOrder({ paymentStatus: "awaiting_confirmation", locale: "en" }),
+      "Змінено в Telegram",
+    );
+    expect(text).toContain("Квитанція до замовлення №1042");
+    expect(text).toContain("Сума: <b>3 000 ₴</b>");
+    expect(text).toContain("Статус:</b> Нове · Очікує підтвердження");
+    expect(text).toContain("<i>Змінено в Telegram</i>");
+  });
+
+  it("confirms a receipt in the customer's language", () => {
+    expect(receiptReceivedMessage(makeNotifiableOrder({ locale: "ru" }))).toContain(
+      "Квитанцию получили",
+    );
+    expect(receiptNoOrderMessage("en", "+380971234567")).toContain(
+      "please call us: +380971234567",
+    );
+  });
+
   it("offers the phone number when there is one", () => {
     expect(helpMessage("+380971234567")).toContain("+380971234567");
     expect(helpMessage("")).toContain("Контакти");
+    expect(helpMessage("+380971234567", "en")).toContain("Call us");
+    expect(welcomeMessage("ru")).toContain("Добро пожаловать");
   });
 });

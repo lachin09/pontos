@@ -1,3 +1,4 @@
+import type { Locale } from "@/lib/i18n/config";
 import type {
   DeliveryMethod,
   OrderStatus,
@@ -92,6 +93,8 @@ export interface NotifiableOrder {
   comment: string | null;
   subtotal: number;
   telegramChatId: number | null;
+  /** The language the customer shopped in. */
+  locale: Locale;
   items: Pick<
     OrderItem,
     "productName" | "size" | "color" | "quantity" | "subtotal"

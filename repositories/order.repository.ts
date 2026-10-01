@@ -38,6 +38,10 @@ export interface OrderNotificationRepository {
   /** `token` is the order's public token (a UUID). */
   findByToken(token: string): Promise<NotifiableOrder | null>;
   setTelegramChat(orderId: string, chatId: number): Promise<void>;
+  /** The latest unpaid transfer order linked to this chat, if any. */
+  findAwaitingPaymentByChat(chatId: number): Promise<NotifiableOrder | null>;
+  /** A receipt arrived: a pending transfer now awaits the owner's check. */
+  markReceiptSent(orderId: string): Promise<void>;
   /**
    * Status change pressed in an owner chat. The database checks the chat is
    * an owner chat. Returns false when the order does not exist.
