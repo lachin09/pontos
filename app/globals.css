@@ -15,6 +15,8 @@
   --highlight: #8c2f23;
   --gold: #a88452;
   --ink: #16130f;
+  /* The plain background behind every product photo (see photo pipeline). */
+  --photo: #f2f0ed;
   --danger: #a43e38;
   --success: #3f6b4a;
   --focus: #a88452;
@@ -41,6 +43,7 @@
   --color-highlight: var(--highlight);
   --color-gold: var(--gold);
   --color-ink: var(--ink);
+  --color-photo: var(--photo);
   --color-danger: var(--danger);
   --color-success: var(--success);
   --color-focus: var(--focus);

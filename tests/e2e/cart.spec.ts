@@ -1,6 +1,11 @@
 import type { Page } from "@playwright/test";
 import { expect, test } from "./fixtures";
-import { addFirstInStockItem, headerCartLink, priceDigits } from "./helpers";
+import {
+  addFirstInStockItem,
+  headerCartLink,
+  priceDigits,
+  tryAddFirstInStockItem,
+} from "./helpers";
 
 /** The "Разом за товари" amount in the cart summary. */
 async function cartTotal(page: Page) {
@@ -23,7 +28,10 @@ test.describe("cart", () => {
   });
 
   test("increasing the quantity increases the subtotal", async ({ page }) => {
-    const item = await addFirstInStockItem(page, { minStock: 2 });
+    // The shop often stocks one piece per size; then there is nothing to add.
+    const item = await tryAddFirstInStockItem(page, { minStock: 2 });
+    test.skip(!item, "no product with two or more pieces in stock");
+    if (!item) return;
     await page.goto("/cart");
 
     const lines = page.getByRole("list", { name: "Товари в кошику" });

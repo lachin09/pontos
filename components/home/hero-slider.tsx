@@ -75,7 +75,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
     <section
       aria-roledescription={s.carousel}
       aria-label={s.label}
-      className="relative isolate overflow-hidden bg-ink text-white"
+      className="relative isolate overflow-hidden bg-photo text-foreground"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       onFocus={() => setHovered(true)}
@@ -96,7 +96,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
         go(end < start ? active + 1 : active - 1);
       }}
     >
-      <div className="relative aspect-[3/4] max-h-[88vh] w-full sm:aspect-[16/10] lg:aspect-auto lg:h-[min(76vh,760px)] lg:min-h-[560px]">
+      <div className="relative aspect-[3/4] max-h-[88vh] min-h-[560px] w-full sm:aspect-[16/10] sm:min-h-0 lg:aspect-auto lg:h-[min(76vh,760px)] lg:min-h-[560px]">
         {slides.map((slide, index) => {
           const isActive = index === active;
           return (
@@ -113,35 +113,22 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               className={`absolute inset-0 transition-opacity duration-1000 ease-out ${isActive ? "opacity-100" : "opacity-0"}`}
             >
               {shown.has(index) ? (
-                <>
-                  {/* A tiny blurred copy fills the frame with the photo's own
-                      backdrop and shows instantly while the photo loads. */}
+                /* Product photos sit on the same warm grey as this section,
+                   so the garment appears to float in the hero. */
+                <div className="absolute inset-x-0 top-0 h-[54%] overflow-hidden sm:inset-0 sm:left-[38%] sm:h-auto lg:left-[44%] lg:right-[4%]">
                   <Image
                     src={slide.imageUrl}
-                    alt=""
+                    alt={slide.name}
                     fill
-                    sizes="32px"
-                    quality={30}
+                    sizes="(max-width: 640px) 100vw, 60vw"
                     preload={index === 0}
-                    className="scale-110 object-cover opacity-70 blur-2xl"
+                    className={`object-contain ${isActive && !reducedMotion ? "animate-hero-zoom" : ""}`}
                   />
-                  <div className="absolute inset-0 overflow-hidden sm:left-[38%] lg:left-[44%] lg:right-[4%]">
-                    <Image
-                      src={slide.imageUrl}
-                      alt={slide.name}
-                      fill
-                      sizes="(max-width: 640px) 100vw, 60vw"
-                      preload={index === 0}
-                      className={`object-cover sm:object-contain ${isActive && !reducedMotion ? "animate-hero-zoom" : ""}`}
-                    />
-                  </div>
-                </>
+                </div>
               ) : null}
             </div>
           );
         })}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/95 via-black/45 to-transparent sm:from-black/85 sm:via-transparent sm:to-black/10" />
-        <div className="pointer-events-none absolute inset-0 hidden bg-gradient-to-r from-black/75 via-black/35 to-transparent sm:block" />
 
         <div className="absolute inset-0 flex items-end sm:items-center">
           <div className="mx-auto w-full max-w-[1440px] px-page pb-24 sm:pb-0">
@@ -150,10 +137,10 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                 <span className="h-px w-10 bg-gold/70" aria-hidden="true" />
                 {s.eyebrow}
               </p>
-              <h1 className="mt-4 text-[clamp(3.25rem,8vw,7rem)] leading-[0.92] text-white">
+              <h1 className="mt-4 text-[clamp(3.25rem,8vw,7rem)] leading-[0.92] text-foreground">
                 {s.title}
               </h1>
-              <p className="mt-5 hidden max-w-md text-sm leading-7 text-white/75 sm:block sm:text-base">
+              <p className="mt-5 hidden max-w-md text-sm leading-7 text-muted sm:block sm:text-base">
                 {s.text}
               </p>
               <div className="mt-6 flex flex-wrap items-center gap-3 sm:mt-8">
@@ -162,7 +149,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                   className={buttonClasses({
                     size: "lg",
                     className:
-                      "group/cta bg-white text-ink hover:bg-gold hover:text-white",
+                      "group/cta bg-ink text-white hover:bg-gold hover:text-white",
                   })}
                 >
                   {s.cta}
@@ -178,7 +165,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                     variant: "outline",
                     size: "lg",
                     className:
-                      "border-white/40 text-white hover:border-white hover:bg-white/10",
+                      "border-ink/30 text-foreground hover:border-ink hover:bg-ink/5",
                   })}
                 >
                   {s.newIn}
@@ -196,13 +183,13 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               href={current.href}
               className="group/model hidden min-w-0 animate-fade-in sm:block"
             >
-              <span className="block text-[0.6rem] uppercase tracking-[0.22em] text-white/55">
+              <span className="block text-[0.6rem] uppercase tracking-[0.22em] text-muted">
                 {s.onPhoto}
               </span>
-              <span className="mt-1 block truncate font-serif text-xl text-white transition-colors group-hover/model:text-gold">
+              <span className="mt-1 block truncate font-serif text-xl text-foreground transition-colors group-hover/model:text-gold">
                 {current.name}
               </span>
-              <span className="mt-0.5 flex items-center gap-2 text-sm text-white/75">
+              <span className="mt-0.5 flex items-center gap-2 text-sm text-muted">
                 {current.price}
                 <ArrowRight
                   size={14}
@@ -227,7 +214,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                       onClick={() => go(index)}
                       className="group/dot relative grid h-8 w-7 place-items-center sm:w-10"
                     >
-                      <span className="relative block h-0.5 w-full overflow-hidden bg-white/30">
+                      <span className="relative block h-0.5 w-full overflow-hidden bg-ink/20">
                         {index === active ? (
                           <span
                             key={`${active}-${playing}`}
@@ -248,7 +235,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                     type="button"
                     aria-label={s.previous}
                     onClick={() => go(active - 1)}
-                    className="hidden size-10 place-items-center rounded-full border border-white/30 transition-colors hover:border-white hover:bg-white/10 sm:grid"
+                    className="hidden size-10 place-items-center rounded-full border border-ink/25 transition-colors hover:border-ink hover:bg-ink/5 sm:grid"
                   >
                     <ChevronLeft size={18} aria-hidden="true" />
                   </button>
@@ -256,7 +243,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                     type="button"
                     aria-label={s.next}
                     onClick={() => go(active + 1)}
-                    className="hidden size-10 place-items-center rounded-full border border-white/30 transition-colors hover:border-white hover:bg-white/10 sm:grid"
+                    className="hidden size-10 place-items-center rounded-full border border-ink/25 transition-colors hover:border-ink hover:bg-ink/5 sm:grid"
                   >
                     <ChevronRight size={18} aria-hidden="true" />
                   </button>
@@ -266,7 +253,7 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
                       aria-label={paused ? s.resume : s.pause}
                       aria-pressed={paused}
                       onClick={() => setPaused((value) => !value)}
-                      className="grid size-10 place-items-center rounded-full text-white/70 transition-colors hover:text-white"
+                      className="grid size-10 place-items-center rounded-full text-muted transition-colors hover:text-foreground"
                     >
                       {paused ? (
                         <Play size={15} aria-hidden="true" />

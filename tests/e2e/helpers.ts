@@ -103,6 +103,20 @@ export async function addFirstInStockItem(
   page: Page,
   { minStock = 1 }: { minStock?: number } = {},
 ): Promise<AddedItem> {
+  const item = await tryAddFirstInStockItem(page, { minStock });
+  if (!item) {
+    throw new Error(
+      `No in-stock variant with at least ${minStock} items found in the catalog`,
+    );
+  }
+  return item;
+}
+
+/** Like `addFirstInStockItem`, but null when the live stock has no match. */
+export async function tryAddFirstInStockItem(
+  page: Page,
+  { minStock = 1 }: { minStock?: number } = {},
+): Promise<AddedItem | null> {
   const paths = await availableProductPaths(page);
   expect(paths.length, "the catalog has in-stock products").toBeGreaterThan(0);
 
@@ -131,8 +145,5 @@ export async function addFirstInStockItem(
       return { name, path };
     }
   }
-
-  throw new Error(
-    `No in-stock variant with at least ${minStock} items found in the first ${paths.length} catalog products`,
-  );
+  return null;
 }
