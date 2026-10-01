@@ -287,7 +287,7 @@ export function createSupabaseOrderNotificationRepository(
         .eq("payment_method", "bank_transfer")
         .in("payment_status", ["pending", "awaiting_confirmation"])
         .neq("status", "cancelled")
-        .order("order_number", { ascending: false })
+        .order("created_at", { ascending: false })
         .limit(1)
         .maybeSingle();
       if (error) throw error;
