@@ -7,6 +7,9 @@ const nextConfig: NextConfig = {
     // Every photo gets a unique path when uploaded, so optimized copies can
     // stay cached for a year instead of being regenerated every 4 hours.
     minimumCacheTTL: 31536000,
+    // Next 16 only serves the qualities listed here; 30 is for the tiny
+    // blurred placeholders behind every product photo.
+    qualities: [30, 75],
     remotePatterns: [
       {
         protocol: "https",
