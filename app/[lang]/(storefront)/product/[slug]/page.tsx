@@ -25,6 +25,9 @@ import { getI18n } from "@/lib/i18n/server";
 import { telHref } from "@/lib/utils/format";
 import { EMPTY_STORE_INFO } from "@/lib/validators/store-info";
 
+/** Rendered pages are cached and refreshed when products change or after 5 minutes. */
+export const revalidate = 300;
+
 export async function generateMetadata({
   params,
 }: PageProps<"/[lang]/product/[slug]">): Promise<Metadata> {

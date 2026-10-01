@@ -35,8 +35,20 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
   const touchStartX = useRef<number | null>(null);
   const count = slides.length;
 
+  // Photos are fetched only for slides that have been shown plus the next
+  // one, so the first paint is not waiting on five large images.
+  const [shown, setShown] = useState<Set<number>>(() => new Set([0, 1]));
+
   const go = useCallback(
-    (index: number) => setActive(((index % count) + count) % count),
+    (index: number) => {
+      const target = ((index % count) + count) % count;
+      setActive(target);
+      setShown((current) =>
+        current.has(target) && current.has((target + 1) % count)
+          ? current
+          : new Set([...current, target, (target + 1) % count]),
+      );
+    },
     [count],
   );
 
@@ -100,25 +112,31 @@ export function HeroSlider({ slides }: { slides: HeroSlide[] }) {
               aria-hidden={!isActive}
               className={`absolute inset-0 transition-opacity duration-1000 ease-out ${isActive ? "opacity-100" : "opacity-0"}`}
             >
-              {/* Blurred copy fills the frame with the photo's own backdrop. */}
-              <Image
-                src={slide.imageUrl}
-                alt=""
-                fill
-                sizes="100vw"
-                preload={index === 0}
-                className="scale-110 object-cover opacity-70 blur-2xl"
-              />
-              <div className="absolute inset-0 overflow-hidden sm:left-[38%] lg:left-[44%] lg:right-[4%]">
-                <Image
-                  src={slide.imageUrl}
-                  alt={slide.name}
-                  fill
-                  sizes="(max-width: 640px) 100vw, 60vw"
-                  preload={index === 0}
-                  className={`object-cover sm:object-contain ${isActive && !reducedMotion ? "animate-hero-zoom" : ""}`}
-                />
-              </div>
+              {shown.has(index) ? (
+                <>
+                  {/* A tiny blurred copy fills the frame with the photo's own
+                      backdrop and shows instantly while the photo loads. */}
+                  <Image
+                    src={slide.imageUrl}
+                    alt=""
+                    fill
+                    sizes="32px"
+                    quality={30}
+                    preload={index === 0}
+                    className="scale-110 object-cover opacity-70 blur-2xl"
+                  />
+                  <div className="absolute inset-0 overflow-hidden sm:left-[38%] lg:left-[44%] lg:right-[4%]">
+                    <Image
+                      src={slide.imageUrl}
+                      alt={slide.name}
+                      fill
+                      sizes="(max-width: 640px) 100vw, 60vw"
+                      preload={index === 0}
+                      className={`object-cover sm:object-contain ${isActive && !reducedMotion ? "animate-hero-zoom" : ""}`}
+                    />
+                  </div>
+                </>
+              ) : null}
             </div>
           );
         })}

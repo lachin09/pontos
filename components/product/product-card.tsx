@@ -1,3 +1,4 @@
+import { HoverPhoto } from "@/components/product/hover-photo";
 import { ProductPhoto } from "@/components/product/product-photo";
 import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
@@ -13,10 +14,13 @@ const MAX_SWATCHES = 5;
 export function ProductCard({
   product,
   locale = DEFAULT_LOCALE,
+  preload = false,
 }: {
   product: Product;
   /** Pass the page language; the product text should already be localized. */
   locale?: Locale;
+  /** For cards visible on first paint: fetch the photo early. */
+  preload?: boolean;
 }) {
   const { t, href, plural } = i18nFor(locale);
   const image = product.images[0];
@@ -34,17 +38,15 @@ export function ProductCard({
           <ProductPhoto
             src={image.url}
             alt={image.alt}
+            preload={preload}
             sizes="(max-width: 640px) 48vw, (max-width: 1024px) 30vw, 22vw"
             imageClassName="transition-transform duration-700 ease-out group-hover:scale-[1.035] motion-reduce:transition-none"
           />
         ) : null}
         {alternateImage ? (
-          // Hidden on phones: there is no hover there, so skip the download.
-          <ProductPhoto
+          <HoverPhoto
             src={alternateImage.url}
-            alt=""
             sizes="(max-width: 1024px) 30vw, 22vw"
-            className="hidden opacity-0 transition-opacity duration-300 group-hover:opacity-100 motion-reduce:transition-none sm:block"
           />
         ) : null}
         <span className="absolute left-2.5 top-2.5 flex flex-wrap gap-1.5 sm:left-3 sm:top-3">

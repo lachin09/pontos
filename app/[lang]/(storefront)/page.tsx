@@ -72,14 +72,21 @@ function SectionHeading({
 function ProductGrid({
   products,
   locale,
+  preloadFirstRow = false,
 }: {
   products: Product[];
   locale: Locale;
+  preloadFirstRow?: boolean;
 }) {
   return (
     <div className="grid grid-cols-2 gap-x-3 gap-y-10 sm:gap-x-5 lg:grid-cols-4">
-      {products.map((product) => (
-        <ProductCard key={product.id} product={product} locale={locale} />
+      {products.map((product, index) => (
+        <ProductCard
+          key={product.id}
+          product={product}
+          locale={locale}
+          preload={preloadFirstRow && index < 4}
+        />
       ))}
     </div>
   );
@@ -128,7 +135,13 @@ export default async function HomePage() {
       ? {
           id: "new",
           label: t.home.tabs.newIn,
-          panel: <ProductGrid products={newProducts} locale={locale} />,
+          panel: (
+            <ProductGrid
+              products={newProducts}
+              locale={locale}
+              preloadFirstRow
+            />
+          ),
         }
       : null,
     featuredProducts.length > 0

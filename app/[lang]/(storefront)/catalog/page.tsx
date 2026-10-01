@@ -348,11 +348,12 @@ export default async function CatalogPage({
           ) : null}
           {filteredProducts.length > 0 ? (
             <div className="grid grid-cols-2 gap-x-3 gap-y-8 sm:gap-x-5 sm:gap-y-10 lg:grid-cols-3 xl:grid-cols-4">
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product, index) => (
                 <ProductCard
                   key={product.id}
                   product={product}
                   locale={locale}
+                  preload={index < 4}
                 />
               ))}
             </div>

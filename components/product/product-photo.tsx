@@ -14,8 +14,9 @@ type ProductPhotoProps = Omit<ImageProps, "fill" | "src" | "alt"> & {
  * portraits; `object-cover` would crop collars and hems off tall photos and
  * make them look zoomed in next to square packshots. The spare space is
  * filled with a blurred copy of the same photo so it blends with the photo's
- * own background. Both layers use the same src and sizes, so the browser
- * downloads the file once.
+ * own background. The blurred layer asks for a tiny (16px) rendition, which
+ * arrives in a few milliseconds and doubles as a placeholder while the
+ * sharp photo loads.
  *
  * Render inside a `relative` element that sets the aspect ratio.
  */
@@ -35,8 +36,9 @@ export function ProductPhoto({
         alt=""
         aria-hidden="true"
         fill
-        sizes={sizes}
-        {...props}
+        sizes="16px"
+        quality={30}
+        preload={preload}
         className="scale-110 object-cover opacity-80 blur-2xl saturate-[0.85]"
       />
       <Image

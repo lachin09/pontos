@@ -4,6 +4,9 @@ const nextConfig: NextConfig = {
   images: {
     // AVIF first: product uploads can be 2–3 MB originals.
     formats: ["image/avif", "image/webp"],
+    // Every photo gets a unique path when uploaded, so optimized copies can
+    // stay cached for a year instead of being regenerated every 4 hours.
+    minimumCacheTTL: 31536000,
     remotePatterns: [
       {
         protocol: "https",
