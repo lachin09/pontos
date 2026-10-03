@@ -100,6 +100,37 @@ describe("filterAndSortProducts", () => {
     ]);
   });
 
+  it("keeps the colours of one model together in the default order", () => {
+    const jackets = [
+      makeProduct({ name: "Куртка двостороння чорна", categoryId: "jackets" }),
+      makeProduct({ name: "Бомбер синій", categoryId: "jackets" }),
+      makeProduct({
+        name: "Куртка двостороння помаранчева",
+        categoryId: "jackets",
+        isFeatured: true,
+      }),
+      makeProduct({ name: "Косуха бордова", categoryId: "jackets" }),
+      makeProduct({
+        name: "Куртка двостороння бежева",
+        categoryId: "jackets",
+      }),
+      makeProduct({ name: "Куртка двостороння чорна", categoryId: "coats" }),
+    ];
+
+    expect(
+      filterAndSortProducts(jackets, {}).map(
+        (product) => `${product.name} (${product.categoryId})`,
+      ),
+    ).toEqual([
+      "Куртка двостороння помаранчева (jackets)",
+      "Куртка двостороння бежева (jackets)",
+      "Куртка двостороння чорна (jackets)",
+      "Бомбер синій (jackets)",
+      "Косуха бордова (jackets)",
+      "Куртка двостороння чорна (coats)",
+    ]);
+  });
+
   it("does not mutate the input array", () => {
     const input = all();
     filterAndSortProducts(input, { sort: "price-asc" });

@@ -12,6 +12,40 @@ export interface ProductFilters {
   sort?: ProductSort;
 }
 
+/** The same model in another colour: same category, names one word apart. */
+function isSameModel(a: Product, b: Product) {
+  if (a.categoryId !== b.categoryId) return false;
+  const wordsA = a.name.split(/\s+/);
+  const wordsB = b.name.split(/\s+/);
+  return (
+    wordsA.length > 1 &&
+    wordsA.length === wordsB.length &&
+    wordsA.filter((word, index) => word !== wordsB[index]).length === 1
+  );
+}
+
+/**
+ * Recommended order: the colours of one model stay side by side, a featured
+ * product brings its whole model to the front, and the rest go by name.
+ */
+function sortFeatured(products: Product[]): Product[] {
+  const models: Product[][] = [];
+  const byName = products.toSorted((a, b) =>
+    a.name.localeCompare(b.name, "uk"),
+  );
+  for (const product of byName) {
+    const model = models.find((group) => isSameModel(group[0], product));
+    if (model) model.push(product);
+    else models.push([product]);
+  }
+  const featuredFirst = (a: Product, b: Product) =>
+    Number(b.isFeatured) - Number(a.isFeatured);
+  return models
+    .map((group) => group.sort(featuredFirst))
+    .sort((a, b) => featuredFirst(a[0], b[0]))
+    .flat();
+}
+
 export function filterAndSortProducts(
   products: Product[],
   filters: ProductFilters,
@@ -60,11 +94,7 @@ export function filterAndSortProducts(
       );
     case "featured":
     default:
-      return filtered.sort(
-        (a, b) =>
-          Number(b.isFeatured) - Number(a.isFeatured) ||
-          a.name.localeCompare(b.name, "uk"),
-      );
+      return sortFeatured(filtered);
   }
 }
 
