@@ -9,7 +9,7 @@ import { useI18n } from "@/lib/i18n/client";
 import { splitLocale } from "@/lib/i18n/config";
 
 const navLinkClass =
-  "relative py-1.5 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-foreground/80 transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:scale-x-0 after:bg-gold after:transition-transform after:duration-300 hover:text-foreground hover:after:scale-x-100 aria-[current=page]:text-foreground aria-[current=page]:after:scale-x-100";
+  "relative whitespace-nowrap py-1.5 text-[0.7rem] font-medium uppercase tracking-[0.16em] text-foreground/80 transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-px after:origin-left after:scale-x-0 after:bg-gold after:transition-transform after:duration-300 hover:text-foreground hover:after:scale-x-100 aria-[current=page]:text-foreground aria-[current=page]:after:scale-x-100";
 
 /** The men's / women's lines that have something to show. */
 export function availableLines(links: CategoryLink[]) {
@@ -67,10 +67,10 @@ export function HeaderNav({ links }: { links: CategoryLink[] }) {
   return (
     <nav
       aria-label={t.header.mainNav}
-      className="hidden flex-col items-center gap-2 lg:flex"
+      className="hidden flex-col items-center gap-2 xl:flex"
     >
       <LineSwitch lines={lines} value={line} onChange={setLine} />
-      <ul className="flex items-center gap-7">
+      <ul className="flex items-center gap-5 2xl:gap-7">
         {visibleLinks.map((link) => (
           <li key={link.slug}>
             <Link

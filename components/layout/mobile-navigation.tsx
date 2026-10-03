@@ -45,7 +45,7 @@ export function MobileNavigation({
         type="button"
         variant="ghost"
         size="sm"
-        className="size-11 min-h-11 rounded-full px-0 lg:hidden"
+        className="size-11 min-h-11 rounded-full px-0 xl:hidden"
         aria-label={t.header.openMenu}
         aria-expanded={open}
         onClick={() => setOpen(true)}
