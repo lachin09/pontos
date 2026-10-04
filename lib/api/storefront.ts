@@ -10,6 +10,8 @@ export type OrderConfirmation = {
   paymentStatus: PaymentStatus;
   /** Link that subscribes the customer's Telegram; null when the bot is off. */
   telegramUrl?: string | null;
+  /** The seller's account details for bank-transfer orders; null otherwise. */
+  bankDetails?: string | null;
 };
 
 export const ordersApi = {

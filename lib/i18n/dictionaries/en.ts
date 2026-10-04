@@ -329,6 +329,10 @@ export const en: Dictionary = {
       onDelivery: "On delivery",
       transfer: "Bank transfer",
       pendingNote: "We'll agree the bank transfer details with you by phone.",
+      bankTitle: "Payment details",
+      bankPurpose: "Payment reference: order No. {number}",
+      bankReceipt:
+        "After paying, send the receipt via Telegram, Viber or WhatsApp — or we will confirm the payment by phone.",
       codNote: "Pay for your order when you receive the parcel.",
       telegramTitle: "Get order updates in Telegram",
       telegramText:

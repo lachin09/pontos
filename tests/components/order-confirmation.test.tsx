@@ -26,6 +26,29 @@ describe("OrderConfirmation", () => {
     expect(screen.getByText(/реквізити для оплати/)).toBeInTheDocument();
   });
 
+  it("shows the bank details and payment reference for a transfer", () => {
+    render(
+      <OrderConfirmation
+        confirmation={{
+          ...base,
+          telegramUrl: null,
+          bankDetails: "ФОП Магеррамов Сахіл\nIBAN UA00 0000 0000",
+        }}
+      />,
+    );
+    expect(screen.getByText("Реквізити для оплати")).toBeInTheDocument();
+    expect(screen.getByText(/IBAN UA00 0000 0000/)).toBeInTheDocument();
+    expect(screen.getByText(/вкажіть: замовлення №1042/)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/узгодимо з вами телефоном/),
+    ).not.toBeInTheDocument();
+  });
+
+  it("falls back to the phone note when there are no bank details", () => {
+    render(<OrderConfirmation confirmation={{ ...base, telegramUrl: null }} />);
+    expect(screen.getByText(/узгодимо з вами телефоном/)).toBeInTheDocument();
+  });
+
   it("hides the Telegram block without a link", () => {
     render(
       <OrderConfirmation

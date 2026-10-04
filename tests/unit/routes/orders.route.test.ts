@@ -11,6 +11,12 @@ let botConfigured = true;
 vi.mock("@/lib/server/storefront-services", () => ({
   getOrderPlacement: () => ({ place }),
   getOrderNotifier: () => (botConfigured ? { orderLink } : null),
+  getStoreSettings: () => ({
+    getStoreInfo: async () => ({
+      seller: { bankDetails: "IBAN UA00 0000 0000" },
+      pages: {},
+    }),
+  }),
   // Run the background task straight away so the test can observe it.
   notifyInBackground: (_label: string, task: (n: unknown) => unknown) =>
     task({ notifyNewOrder }),
@@ -72,6 +78,7 @@ describe("POST /api/orders", () => {
       total: 3000,
       paymentStatus: "cash_on_delivery",
       telegramUrl: "https://t.me/pontos_bot?start=o_abc",
+      bankDetails: null,
     });
     // The language defaults to Ukrainian when the client sends none.
     expect(place).toHaveBeenCalledWith({ ...order, locale: "uk" }, KEY);
@@ -90,6 +97,8 @@ describe("POST /api/orders", () => {
     await expect((await post(order)).json()).resolves.toMatchObject({
       orderNumber: 7,
       telegramUrl: null,
+      // Bank-transfer customers get the details even without Telegram.
+      bankDetails: "IBAN UA00 0000 0000",
     });
 
     botConfigured = true;

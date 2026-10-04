@@ -6,6 +6,7 @@ import { assertSameOrigin, json, readJson, route } from "@/lib/http/route";
 import {
   getOrderNotifier,
   getOrderPlacement,
+  getStoreSettings,
   notifyInBackground,
 } from "@/lib/server/storefront-services";
 import { createOrderSchema } from "@/lib/validators/order";
@@ -60,12 +61,28 @@ export const POST = route(async (request) => {
     );
   }
 
+  // Bank-transfer customers see the details right away, Telegram or not.
+  let bankDetails: string | null = null;
+  if (placed.paymentStatus === "pending") {
+    try {
+      bankDetails =
+        (await getStoreSettings().getStoreInfo()).seller.bankDetails.trim() ||
+        null;
+    } catch (error) {
+      console.error(
+        "Bank details unavailable",
+        error instanceof Error ? error.message : error,
+      );
+    }
+  }
+
   return json(
     {
       orderNumber: placed.orderNumber,
       total: placed.total,
       paymentStatus: placed.paymentStatus,
       telegramUrl,
+      bankDetails,
     },
     placed.wasCreated ? 201 : 200,
   );

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { buttonClasses } from "@/components/ui/button";
 import type { OrderConfirmation as Confirmation } from "@/lib/api/storefront";
 import { useI18n } from "@/lib/i18n/client";
+import { fill } from "@/lib/i18n/dictionaries";
 import { formatPrice } from "@/lib/utils/format";
 
 export function OrderConfirmation({
@@ -13,6 +14,10 @@ export function OrderConfirmation({
   const { t, href } = useI18n();
   const c = t.checkout.confirmation;
   const payOnDelivery = confirmation.paymentStatus === "cash_on_delivery";
+  const bankDetails =
+    confirmation.paymentStatus === "pending"
+      ? confirmation.bankDetails?.trim()
+      : undefined;
   return (
     <section
       className="max-w-2xl rounded-[var(--radius-card)] border border-border bg-surface p-6 sm:p-9"
@@ -46,9 +51,22 @@ export function OrderConfirmation({
           {payOnDelivery ? c.onDelivery : c.transfer}
         </span>
       </div>
-      <p className="mt-4 text-sm text-muted">
-        {confirmation.paymentStatus === "pending" ? c.pendingNote : c.codNote}
-      </p>
+      {bankDetails ? (
+        <div className="mt-5 rounded-[var(--radius-card)] border border-border p-4 sm:p-5">
+          <p className="text-sm font-medium">{c.bankTitle}</p>
+          <pre className="mt-2 whitespace-pre-wrap font-sans text-sm leading-6">
+            {bankDetails}
+          </pre>
+          <p className="mt-2 text-sm font-medium">
+            {fill(c.bankPurpose, { number: String(confirmation.orderNumber) })}
+          </p>
+          <p className="mt-3 text-sm text-muted">{c.bankReceipt}</p>
+        </div>
+      ) : (
+        <p className="mt-4 text-sm text-muted">
+          {confirmation.paymentStatus === "pending" ? c.pendingNote : c.codNote}
+        </p>
+      )}
       {confirmation.telegramUrl ? (
         <div className="mt-6 rounded-[var(--radius-card)] bg-surface-muted p-4 sm:p-5">
           <p className="text-sm font-medium">{c.telegramTitle}</p>

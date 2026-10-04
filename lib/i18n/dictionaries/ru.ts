@@ -330,6 +330,10 @@ export const ru: Dictionary = {
       onDelivery: "При получении",
       transfer: "Перевод на счёт",
       pendingNote: "Реквизиты для перевода согласуем с вами по телефону.",
+      bankTitle: "Реквизиты для оплаты",
+      bankPurpose: "В назначении платежа укажите: заказ №{number}",
+      bankReceipt:
+        "После оплаты отправьте квитанцию в Telegram, Viber или WhatsApp — или мы подтвердим оплату по телефону.",
       codNote: "Оплатите заказ при получении посылки.",
       telegramTitle: "Получайте статус заказа в Telegram",
       telegramText:

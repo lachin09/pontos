@@ -336,6 +336,10 @@ export const uk = {
       onDelivery: "При отриманні",
       transfer: "Переказ на рахунок",
       pendingNote: "Реквізити для переказу узгодимо з вами телефоном.",
+      bankTitle: "Реквізити для оплати",
+      bankPurpose: "У призначенні платежу вкажіть: замовлення №{number}",
+      bankReceipt:
+        "Після оплати надішліть квитанцію в Telegram, Viber або WhatsApp — або ми підтвердимо оплату телефоном.",
       codNote: "Оплатіть замовлення під час отримання посилки.",
       telegramTitle: "Отримуйте статус замовлення в Telegram",
       telegramText:
