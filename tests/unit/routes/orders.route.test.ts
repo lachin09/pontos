@@ -102,7 +102,7 @@ describe("POST /api/orders", () => {
       discountAmount: 3000,
       total: 7000,
     });
-    expect(revalidateTag).toHaveBeenCalledWith("promotions", "max");
+    expect(revalidateTag).toHaveBeenCalledWith("promotions", { expire: 0 });
   });
 
   it("still succeeds without a Telegram link when the bot is off or failing", async () => {

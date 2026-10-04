@@ -45,7 +45,9 @@ export const POST = route(async (request) => {
     // Stock changed; refresh availability in the background.
     revalidateTag(CACHE_TAGS.products, "max");
     // The first-customer discount is gone once an order has taken it.
-    if (placed.discountPercent > 0) revalidateTag(CACHE_TAGS.promotions, "max");
+    if (placed.discountPercent > 0) {
+      revalidateTag(CACHE_TAGS.promotions, { expire: 0 });
+    }
     notifyInBackground("new-order alert", (notifier) =>
       notifier.notifyNewOrder(placed.orderNumber),
     );
