@@ -69,6 +69,10 @@ export const uk = {
     close: "Закрити",
     button: "Контакти",
   },
+  promo: {
+    firstCustomer:
+      "Станьте нашим першим покупцем — знижка {percent}% на перше замовлення на сайті. Застосовується автоматично під час оформлення.",
+  },
   home: {
     slider: {
       label: "Обрані моделі",
@@ -323,6 +327,10 @@ export const uk = {
     consentPrivacy: "політикою конфіденційності",
     yourOrder: "Ваше замовлення",
     summaryDelivery: "Оплачується перевізнику окремо",
+    summaryDiscount: "Знижка першому покупцю −{percent}%",
+    summaryDiscountNote:
+      "Діє для першого замовлення на сайті — застосовується автоматично, якщо ви встигнете першим.",
+    summaryToPay: "До сплати",
     total: "Разом за товари",
     backToCart: "Повернутися до кошика",
     confirmation: {
@@ -330,6 +338,11 @@ export const uk = {
       number: "Номер замовлення",
       callback: ". Ми зв’яжемося з вами за вказаним номером телефону.",
       toPay: "До сплати за товари",
+      itemsTotal: "Товари",
+      discount: "Знижка −{percent}%",
+      firstCustomerTitle: "Вітаємо! Ви наш перший покупець 🎉",
+      firstCustomerText:
+        "Тому даруємо знижку {percent}% на це замовлення — її вже враховано в сумі.",
       delivery: "Доставка",
       deliveryValue: "Оплачується перевізнику при отриманні",
       payment: "Оплата",

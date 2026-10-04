@@ -43,10 +43,18 @@ function orderLines(order: NotifiableOrder, locale: Locale = "uk") {
     order.deliveryCountryCode === "UA"
       ? ""
       : `, ${escape(getCountryName(order.deliveryCountryCode, locale))}`;
+  const discount =
+    order.discountAmount > 0
+      ? [
+          `${fill(t.discountFirst, { percent: String(order.discountPercent) })}: −${money(order.discountAmount)}`,
+          `${t.toPay}: <b>${money(order.total)}</b>`,
+        ]
+      : [];
   return [
     ...items,
     "",
     `${t.itemsTotal}: <b>${money(order.subtotal)}</b>`,
+    ...discount,
     `${t.delivery}: ${labels.deliveryMethods[order.deliveryMethod]} · ${escape(order.deliveryAddress)}, ${escape(order.city)}${country}`,
     `${t.payment}: ${labels.paymentMethods[order.paymentMethod]}`,
   ].join("\n");
@@ -192,7 +200,7 @@ export function receiptNoOrderMessage(locale: Locale, phone: string) {
 export function ownerReceiptMessage(order: NotifiableOrder, note?: string) {
   const status = `\n\n<b>Статус:</b> ${ORDER_STATUS_LABELS[order.status]} · ${PAYMENT_STATUS_LABELS[order.paymentStatus]}`;
   return (
-    `💳 <b>Квитанція до замовлення №${order.orderNumber}</b>\n${escape(order.firstName)} ${escape(order.lastName)} · ${escape(order.phone)}\nСума: <b>${money(order.subtotal)}</b> · ${PAYMENT_METHOD_LABELS[order.paymentMethod]}` +
+    `💳 <b>Квитанція до замовлення №${order.orderNumber}</b>\n${escape(order.firstName)} ${escape(order.lastName)} · ${escape(order.phone)}\nСума: <b>${money(order.total)}</b> · ${PAYMENT_METHOD_LABELS[order.paymentMethod]}` +
     status +
     (note ? `\n<i>${escape(note)}</i>` : "")
   );

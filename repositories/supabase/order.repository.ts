@@ -56,6 +56,9 @@ export function createSupabaseOrderPlacementRepository(
       }
       return {
         orderNumber: order.order_number,
+        subtotal: Number(order.subtotal),
+        discountPercent: order.discount_percent,
+        discountAmount: Number(order.discount_amount),
         total: Number(order.total),
         paymentStatus: order.payment_status,
         wasCreated: order.was_created,
@@ -109,7 +112,7 @@ export function createSupabaseOrderAdminRepository(
         client
           .from("orders")
           .select(
-            "id, order_number, first_name, last_name, phone, city, delivery_method, delivery_address, delivery_country_code, delivery_postal_code, nova_poshta_division_id, nova_poshta_division_name, nova_poshta_division_category, payment_method, payment_status, status, comment, subtotal, delivery_price, total, created_at, telegram_chat_id, order_items(id, product_name, product_image, size, color, price, quantity, subtotal)",
+            "id, order_number, first_name, last_name, phone, city, delivery_method, delivery_address, delivery_country_code, delivery_postal_code, nova_poshta_division_id, nova_poshta_division_name, nova_poshta_division_category, payment_method, payment_status, status, comment, subtotal, discount_percent, discount_amount, delivery_price, total, created_at, telegram_chat_id, order_items(id, product_name, product_image, size, color, price, quantity, subtotal)",
           )
           .eq("id", id)
           .maybeSingle(),
@@ -140,6 +143,8 @@ export function createSupabaseOrderAdminRepository(
         status: order.status,
         comment: order.comment,
         subtotal: Number(order.subtotal),
+        discountPercent: order.discount_percent,
+        discountAmount: Number(order.discount_amount),
         deliveryPrice: Number(order.delivery_price),
         total: Number(order.total),
         createdAt: order.created_at,
@@ -179,7 +184,7 @@ export function createSupabaseOrderAdminRepository(
 }
 
 const notifiableColumns =
-  "id, order_number, public_token, first_name, last_name, phone, city, delivery_country_code, delivery_method, delivery_address, payment_method, payment_status, status, comment, subtotal, telegram_chat_id, locale, order_items(product_name, size, color, quantity, subtotal)";
+  "id, order_number, public_token, first_name, last_name, phone, city, delivery_country_code, delivery_method, delivery_address, payment_method, payment_status, status, comment, subtotal, discount_percent, discount_amount, total, telegram_chat_id, locale, order_items(product_name, size, color, quantity, subtotal)";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -203,6 +208,9 @@ export function createSupabaseOrderNotificationRepository(
     status: NotifiableOrder["status"];
     comment: string | null;
     subtotal: number;
+    discount_percent: number;
+    discount_amount: number;
+    total: number;
     telegram_chat_id: number | null;
     locale: string;
     order_items: {
@@ -230,6 +238,9 @@ export function createSupabaseOrderNotificationRepository(
     status: data.status,
     comment: data.comment,
     subtotal: Number(data.subtotal),
+    discountPercent: data.discount_percent,
+    discountAmount: Number(data.discount_amount),
+    total: Number(data.total),
     telegramChatId: data.telegram_chat_id,
     locale: isLocale(data.locale) ? data.locale : "uk",
     items: data.order_items.map((item) => ({

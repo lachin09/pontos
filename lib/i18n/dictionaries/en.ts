@@ -63,6 +63,10 @@ export const en: Dictionary = {
     close: "Close",
     button: "Contact",
   },
+  promo: {
+    firstCustomer:
+      "Be our first customer — {percent}% off the first order on the site. Applied automatically at checkout.",
+  },
   home: {
     slider: {
       label: "Featured styles",
@@ -316,6 +320,10 @@ export const en: Dictionary = {
     consentPrivacy: "privacy policy",
     yourOrder: "Your order",
     summaryDelivery: "Paid to the carrier separately",
+    summaryDiscount: "First-customer discount −{percent}%",
+    summaryDiscountNote:
+      "For the first order on the site — applied automatically if you are first.",
+    summaryToPay: "To pay",
     total: "Items total",
     backToCart: "Back to cart",
     confirmation: {
@@ -323,6 +331,11 @@ export const en: Dictionary = {
       number: "Order number",
       callback: ". We'll contact you on the phone number you provided.",
       toPay: "To pay for items",
+      itemsTotal: "Items",
+      discount: "Discount −{percent}%",
+      firstCustomerTitle: "Congratulations! You are our first customer 🎉",
+      firstCustomerText:
+        "So this order comes with {percent}% off — it is already included in the total.",
       delivery: "Delivery",
       deliveryValue: "Paid to the carrier on receipt",
       payment: "Payment",

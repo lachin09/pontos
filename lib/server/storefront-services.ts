@@ -35,6 +35,18 @@ export const categoryService = createCategoryService(
 export const getOrderPlacement = () =>
   createSupabaseOrderPlacementRepository(createSupabaseAdminClient());
 
+/** The first-customer discount a new order would get now; 0 when none. */
+export async function getFirstCustomerDiscountPercent(): Promise<number> {
+  const { data, error } = await createSupabaseAdminClient().rpc(
+    "first_customer_discount_percent",
+  );
+  if (error) {
+    console.error("First-customer discount lookup failed", error.message);
+    return 0;
+  }
+  return Number(data ?? 0);
+}
+
 export const getStoreSettings = () =>
   createSettingsService(
     createSupabaseSettingsRepository(createSupabaseAdminClient()),

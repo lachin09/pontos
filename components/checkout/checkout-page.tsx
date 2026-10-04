@@ -30,7 +30,14 @@ const STAGE_HEADINGS = {
 } as const;
 
 /** Sequences checkout: details form → review → confirmation. */
-export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
+export function CheckoutPage({
+  policyLinks,
+  discountPercent = 0,
+}: {
+  policyLinks: PolicyLinks;
+  /** First-customer discount still on offer; 0 when none. */
+  discountPercent?: number;
+}) {
   const { t, href } = useI18n();
   const items = useCartStore((state) => state.items);
   const hasHydrated = useCartStore((state) => state.hasHydrated);
@@ -55,7 +62,9 @@ export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
     if (previousStep.current === step) return;
     previousStep.current = step;
     window.scrollTo({ top: 0, behavior: "instant" });
-    document.getElementById(STAGE_HEADINGS[step])?.focus({ preventScroll: true });
+    document
+      .getElementById(STAGE_HEADINGS[step])
+      ?.focus({ preventScroll: true });
   }, [step]);
 
   if (!hasHydrated) {
@@ -125,6 +134,7 @@ export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
         <OrderReview
           data={savedData}
           subtotal={subtotal}
+          discountPercent={discountPercent}
           placing={order.placing}
           error={order.error}
           onConfirm={() => void order.place(savedData, items)}
@@ -134,8 +144,16 @@ export function CheckoutPage({ policyLinks }: { policyLinks: PolicyLinks }) {
       ) : (
         <div className="grid items-start gap-8 lg:grid-cols-[1fr_360px] lg:gap-10">
           <CheckoutForm initialData={savedData} onValid={review} />
-          <OrderSummaryCompact items={items} subtotal={subtotal} />
-          <OrderSummaryAside items={items} subtotal={subtotal} />
+          <OrderSummaryCompact
+            items={items}
+            subtotal={subtotal}
+            discountPercent={discountPercent}
+          />
+          <OrderSummaryAside
+            items={items}
+            subtotal={subtotal}
+            discountPercent={discountPercent}
+          />
         </div>
       )}
     </div>

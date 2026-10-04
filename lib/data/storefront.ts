@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { CACHE_TAGS } from "@/lib/data/cache-tags";
 import {
   categoryService,
+  getFirstCustomerDiscountPercent,
   getStoreSettings,
   productService,
 } from "@/lib/server/storefront-services";
@@ -45,6 +46,14 @@ export const getContactLinks = unstable_cache(
   () => getStoreSettings().getContactLinks(),
   ["storefront:contact-links"],
   { tags: [CACHE_TAGS.contactLinks], revalidate: FALLBACK_REVALIDATE_SECONDS },
+);
+
+// Refreshed when an order claims the discount (see app/api/orders/route.ts);
+// the short fallback covers a cancellation that frees it again.
+export const getFirstCustomerDiscount = unstable_cache(
+  () => getFirstCustomerDiscountPercent(),
+  ["storefront:first-customer-discount"],
+  { tags: [CACHE_TAGS.promotions], revalidate: 60 },
 );
 
 export const getStoreInfo = unstable_cache(

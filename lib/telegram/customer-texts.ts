@@ -10,6 +10,8 @@ export type CustomerTexts = {
   introNew: string;
   status: string;
   itemsTotal: string;
+  discountFirst: string; // "…{percent}%"
+  toPay: string;
   delivery: string;
   payment: string;
   bankTitle: string;
@@ -34,6 +36,8 @@ const uk: CustomerTexts = {
     "Ми отримали ваше замовлення й зателефонуємо, щоб його підтвердити. Тут ви отримуватимете оновлення статусу.",
   status: "Статус",
   itemsTotal: "Разом за товари",
+  discountFirst: "Знижка першому покупцю −{percent}%",
+  toPay: "До сплати",
   delivery: "Доставка",
   payment: "Оплата",
   bankTitle: "Реквізити для оплати",
@@ -75,6 +79,8 @@ const ru: CustomerTexts = {
     "Мы получили ваш заказ и позвоним, чтобы его подтвердить. Здесь вы будете получать обновления статуса.",
   status: "Статус",
   itemsTotal: "Итого за товары",
+  discountFirst: "Скидка первому покупателю −{percent}%",
+  toPay: "К оплате",
   delivery: "Доставка",
   payment: "Оплата",
   bankTitle: "Реквизиты для оплаты",
@@ -114,6 +120,8 @@ const en: CustomerTexts = {
     "We have received your order and will call you to confirm it. You will get status updates here.",
   status: "Status",
   itemsTotal: "Items total",
+  discountFirst: "First-customer discount −{percent}%",
+  toPay: "To pay",
   delivery: "Delivery",
   payment: "Payment",
   bankTitle: "Payment details",

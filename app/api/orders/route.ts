@@ -44,6 +44,8 @@ export const POST = route(async (request) => {
   if (placed.wasCreated) {
     // Stock changed; refresh availability in the background.
     revalidateTag(CACHE_TAGS.products, "max");
+    // The first-customer discount is gone once an order has taken it.
+    if (placed.discountPercent > 0) revalidateTag(CACHE_TAGS.promotions, "max");
     notifyInBackground("new-order alert", (notifier) =>
       notifier.notifyNewOrder(placed.orderNumber),
     );
@@ -79,6 +81,9 @@ export const POST = route(async (request) => {
   return json(
     {
       orderNumber: placed.orderNumber,
+      subtotal: placed.subtotal,
+      discountPercent: placed.discountPercent,
+      discountAmount: placed.discountAmount,
       total: placed.total,
       paymentStatus: placed.paymentStatus,
       telegramUrl,

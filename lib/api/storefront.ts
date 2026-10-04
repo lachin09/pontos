@@ -6,6 +6,10 @@ import type { CreateOrderInput } from "@/lib/validators/order";
 
 export type OrderConfirmation = {
   orderNumber: number;
+  subtotal?: number;
+  /** First-customer promotion applied to this order; 0 or absent otherwise. */
+  discountPercent?: number;
+  discountAmount?: number;
   total: number;
   paymentStatus: PaymentStatus;
   /** Link that subscribes the customer's Telegram; null when the bot is off. */

@@ -611,7 +611,9 @@ describe("order notifier", () => {
     it("ignores updates without text", async () => {
       const { notifier, sent } = setup();
       await notifier.handleUpdate({});
-      await notifier.handleUpdate({ message: { message_id: 1, chat: { id: 1 } } });
+      await notifier.handleUpdate({
+        message: { message_id: 1, chat: { id: 1 } },
+      });
       expect(sent).toEqual([]);
     });
   });
@@ -657,14 +659,19 @@ describe("order notifier", () => {
 
     it("explains when nothing awaits payment in this chat", async () => {
       const { photo, sent, copies } = setup({
-        order: makeNotifiableOrder({ paymentMethod: "cash_on_delivery", telegramChatId: 555 }),
+        order: makeNotifiableOrder({
+          paymentMethod: "cash_on_delivery",
+          telegramChatId: 555,
+        }),
         telegram: { ownerChatIds: [777], connectCode: null },
       });
       await photo(555);
       await photo(999);
       expect(copies).toEqual([]);
       expect(sent).toHaveLength(2);
-      expect(sent[0].text).toContain("Не знайшли замовлення, яке очікує оплати");
+      expect(sent[0].text).toContain(
+        "Не знайшли замовлення, яке очікує оплати",
+      );
       expect(sent[0].text).toContain("+380971234567");
     });
 

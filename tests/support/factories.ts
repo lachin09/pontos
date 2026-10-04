@@ -80,6 +80,9 @@ export function makeNotifiableOrder(
     status: "new",
     comment: null,
     subtotal: 3000,
+    discountPercent: 0,
+    discountAmount: 0,
+    total: 3000,
     telegramChatId: null,
     locale: "uk",
     items: [

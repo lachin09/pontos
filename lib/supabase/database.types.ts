@@ -176,6 +176,9 @@ export type Database = {
           nova_poshta_division_name: string | null;
           nova_poshta_division_category: string | null;
           delivery_price: number;
+          discount_percent: number;
+          discount_amount: number;
+          discount_label: string | null;
           first_name: string;
           id: string;
           idempotency_key: string;
@@ -204,6 +207,9 @@ export type Database = {
           nova_poshta_division_name?: string | null;
           nova_poshta_division_category?: string | null;
           delivery_price?: number;
+          discount_percent?: number;
+          discount_amount?: number;
+          discount_label?: string | null;
           first_name: string;
           id?: string;
           idempotency_key?: string;
@@ -232,6 +238,9 @@ export type Database = {
           nova_poshta_division_name?: string | null;
           nova_poshta_division_category?: string | null;
           delivery_price?: number;
+          discount_percent?: number;
+          discount_amount?: number;
+          discount_label?: string | null;
           first_name?: string;
           id?: string;
           idempotency_key?: string;
@@ -499,8 +508,12 @@ export type Database = {
           payment_status: Database["public"]["Enums"]["payment_status"];
           total: number;
           was_created: boolean;
+          subtotal: number;
+          discount_percent: number;
+          discount_amount: number;
         }[];
       };
+      first_customer_discount_percent: { Args: never; Returns: number };
       is_active_admin: { Args: never; Returns: boolean };
       update_order_status_from_telegram: {
         Args: {

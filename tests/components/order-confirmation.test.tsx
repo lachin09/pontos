@@ -44,6 +44,27 @@ describe("OrderConfirmation", () => {
     ).not.toBeInTheDocument();
   });
 
+  it("congratulates the first customer and shows the discount", () => {
+    render(
+      <OrderConfirmation
+        confirmation={{
+          ...base,
+          subtotal: 10000,
+          discountPercent: 30,
+          discountAmount: 3000,
+          total: 7000,
+          telegramUrl: null,
+        }}
+      />,
+    );
+    expect(screen.getByRole("note")).toHaveTextContent(
+      /Ви наш перший покупець/,
+    );
+    expect(screen.getByText(/Знижка −30%/)).toBeInTheDocument();
+    expect(screen.getByText("−3 000 ₴")).toBeInTheDocument();
+    expect(screen.getByText("7 000 ₴")).toBeInTheDocument();
+  });
+
   it("falls back to the phone note when there are no bank details", () => {
     render(<OrderConfirmation confirmation={{ ...base, telegramUrl: null }} />);
     expect(screen.getByText(/узгодимо з вами телефоном/)).toBeInTheDocument();

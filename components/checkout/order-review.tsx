@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { getCountryName } from "@/lib/constants/countries";
 import { useI18n } from "@/lib/i18n/client";
 import { fill } from "@/lib/i18n/dictionaries";
+import { discountAmount } from "@/lib/utils/discount";
 import { formatPrice } from "@/lib/utils/format";
 import type { CheckoutData } from "@/lib/validators/checkout";
 
@@ -39,6 +40,7 @@ function ConsentNote({ policyLinks }: { policyLinks: PolicyLinks }) {
 export function OrderReview({
   data,
   subtotal,
+  discountPercent = 0,
   placing,
   error,
   onConfirm,
@@ -47,6 +49,7 @@ export function OrderReview({
 }: {
   data: CheckoutData;
   subtotal: number;
+  discountPercent?: number;
   placing: boolean;
   error: string | null;
   onConfirm: () => void;
@@ -55,6 +58,7 @@ export function OrderReview({
 }) {
   const { t, locale } = useI18n();
   const c = t.checkout;
+  const discount = discountAmount(subtotal, discountPercent);
   return (
     <section
       className="max-w-2xl rounded-[var(--radius-card)] border border-border bg-surface p-5 sm:p-7"
@@ -98,6 +102,15 @@ export function OrderReview({
           </div>
         ) : null}
       </dl>
+      {discount > 0 ? (
+        <p className="mt-5 rounded-md border border-gold/40 bg-highlight/10 p-3 text-sm">
+          <span className="font-medium">
+            {fill(c.summaryDiscount, { percent: String(discountPercent) })}: −
+            {formatPrice(discount)}
+          </span>
+          <span className="mt-1 block text-muted">{c.summaryDiscountNote}</span>
+        </p>
+      ) : null}
       <p className="mt-5 rounded-md bg-surface-muted p-3 text-sm text-muted">
         {c.deliveryNote}
       </p>
@@ -114,7 +127,7 @@ export function OrderReview({
           loadingLabel={c.placing}
           onClick={onConfirm}
         >
-          {fill(c.confirm, { total: formatPrice(subtotal) })}
+          {fill(c.confirm, { total: formatPrice(subtotal - discount) })}
         </Button>
         <Button
           type="button"

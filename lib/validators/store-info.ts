@@ -35,7 +35,9 @@ export const sellerSchema = z.object({
   addressRu: text(300).default(""),
   addressEn: text(300).default(""),
   /** Where the address links to; empty means a Google Maps search for `address`. */
-  mapUrl: z.union([z.literal(""), z.url("Вкажіть коректне посилання").max(500)]).default(""),
+  mapUrl: z
+    .union([z.literal(""), z.url("Вкажіть коректне посилання").max(500)])
+    .default(""),
   email: z.union([z.literal(""), z.email("Вкажіть коректну пошту").max(200)]),
   phone: text(40),
   workingHours: text(200),

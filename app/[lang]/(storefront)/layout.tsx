@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { CartHydration } from "@/components/cart/cart-hydration";
 import { FloatingContactButton } from "@/components/layout/floating-contact-button";
+import { PromoBar } from "@/components/layout/promo-bar";
 import { SiteFooter } from "@/components/layout/site-footer";
 import { SiteHeader } from "@/components/layout/site-header";
 import { getI18n } from "@/lib/i18n/server";
@@ -21,6 +22,7 @@ export default async function StorefrontLayout({
         {t.common.skipToContent}
       </a>
       <SiteHeader />
+      <PromoBar />
       <main id="main" className="flex-1">
         {children}
       </main>

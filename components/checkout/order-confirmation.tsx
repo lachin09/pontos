@@ -1,4 +1,4 @@
-import { ArrowRight, Check, Send } from "lucide-react";
+import { ArrowRight, Check, PartyPopper, Send } from "lucide-react";
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui/button";
 import type { OrderConfirmation as Confirmation } from "@/lib/api/storefront";
@@ -14,6 +14,13 @@ export function OrderConfirmation({
   const { t, href } = useI18n();
   const c = t.checkout.confirmation;
   const payOnDelivery = confirmation.paymentStatus === "cash_on_delivery";
+  const discount =
+    confirmation.discountPercent && confirmation.discountAmount
+      ? {
+          percent: String(confirmation.discountPercent),
+          amount: confirmation.discountAmount,
+        }
+      : null;
   const bankDetails =
     confirmation.paymentStatus === "pending"
       ? confirmation.bankDetails?.trim()
@@ -39,7 +46,41 @@ export function OrderConfirmation({
         <strong className="text-foreground">#{confirmation.orderNumber}</strong>
         {c.callback}
       </p>
+      {discount ? (
+        <div
+          className="mt-6 flex gap-3 rounded-[var(--radius-card)] border border-gold/40 bg-highlight/10 p-4 sm:p-5"
+          role="note"
+        >
+          <PartyPopper
+            size={22}
+            className="shrink-0 text-gold"
+            aria-hidden="true"
+          />
+          <div>
+            <p className="font-medium">
+              {fill(c.firstCustomerTitle, { percent: discount.percent })}
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              {fill(c.firstCustomerText, { percent: discount.percent })}
+            </p>
+          </div>
+        </div>
+      ) : null}
       <div className="mt-6 grid gap-3 border-y border-border py-4 text-sm sm:grid-cols-2">
+        {discount && confirmation.subtotal != null ? (
+          <>
+            <span className="text-muted">{c.itemsTotal}</span>
+            <span className="sm:text-right">
+              {formatPrice(confirmation.subtotal)}
+            </span>
+            <span className="text-muted">
+              {fill(c.discount, { percent: discount.percent })}
+            </span>
+            <span className="tabular-nums text-highlight sm:text-right">
+              −{formatPrice(discount.amount)}
+            </span>
+          </>
+        ) : null}
         <span className="text-muted">{c.toPay}</span>
         <strong className="sm:text-right">
           {formatPrice(confirmation.total)}

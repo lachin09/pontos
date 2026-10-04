@@ -86,6 +86,25 @@ describe("POST /api/orders", () => {
     expect(notifyNewOrder).toHaveBeenCalledWith(1042);
   });
 
+  it("returns the first-customer discount and retires the offer", async () => {
+    place.mockResolvedValue({
+      orderNumber: 2001,
+      subtotal: 10000,
+      discountPercent: 30,
+      discountAmount: 3000,
+      total: 7000,
+      paymentStatus: "cash_on_delivery",
+      wasCreated: true,
+    });
+    await expect((await post(order)).json()).resolves.toMatchObject({
+      subtotal: 10000,
+      discountPercent: 30,
+      discountAmount: 3000,
+      total: 7000,
+    });
+    expect(revalidateTag).toHaveBeenCalledWith("promotions", "max");
+  });
+
   it("still succeeds without a Telegram link when the bot is off or failing", async () => {
     place.mockResolvedValue({
       orderNumber: 7,

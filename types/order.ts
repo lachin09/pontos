@@ -8,6 +8,10 @@ import type {
 
 export interface PlacedOrder {
   orderNumber: number;
+  subtotal: number;
+  /** First-customer promotion: 0 when it did not apply. */
+  discountPercent: number;
+  discountAmount: number;
   total: number;
   paymentStatus: PaymentStatus;
   /** False when the idempotency key matched an order that already exists. */
@@ -68,6 +72,8 @@ export interface OrderDetails {
   status: OrderStatus;
   comment: string | null;
   subtotal: number;
+  discountPercent: number;
+  discountAmount: number;
   deliveryPrice: number;
   total: number;
   createdAt: string;
@@ -94,6 +100,9 @@ export interface NotifiableOrder {
   status: OrderStatus;
   comment: string | null;
   subtotal: number;
+  discountPercent: number;
+  discountAmount: number;
+  total: number;
   telegramChatId: number | null;
   /** The language the customer shopped in. */
   locale: Locale;

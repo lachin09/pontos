@@ -39,6 +39,8 @@ export interface AdminOrderDetailsData {
   status: OrderStatus;
   comment: string | null;
   subtotal: number;
+  discountPercent: number;
+  discountAmount: number;
   deliveryPrice: number;
   total: number;
   createdAt: string;
@@ -207,6 +209,14 @@ export function AdminOrderDetails({ order }: { order: AdminOrderDetailsData }) {
               <dt className="text-muted">Товари</dt>
               <dd>{formatPrice(order.subtotal)}</dd>
             </div>
+            {order.discountAmount > 0 ? (
+              <div className="flex justify-between">
+                <dt className="text-muted">
+                  Знижка −{order.discountPercent}% (перший покупець)
+                </dt>
+                <dd>−{formatPrice(order.discountAmount)}</dd>
+              </div>
+            ) : null}
             <div className="flex justify-between">
               <dt className="text-muted">Доставка</dt>
               <dd>

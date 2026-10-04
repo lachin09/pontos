@@ -63,6 +63,10 @@ export const ru: Dictionary = {
     close: "Закрыть",
     button: "Контакты",
   },
+  promo: {
+    firstCustomer:
+      "Станьте нашим первым покупателем — скидка {percent}% на первый заказ на сайте. Применяется автоматически при оформлении.",
+  },
   home: {
     slider: {
       label: "Избранные модели",
@@ -317,6 +321,10 @@ export const ru: Dictionary = {
     consentPrivacy: "политикой конфиденциальности",
     yourOrder: "Ваш заказ",
     summaryDelivery: "Оплачивается перевозчику отдельно",
+    summaryDiscount: "Скидка первому покупателю −{percent}%",
+    summaryDiscountNote:
+      "Действует для первого заказа на сайте — применяется автоматически, если вы успеете первым.",
+    summaryToPay: "К оплате",
     total: "Итого за товары",
     backToCart: "Вернуться в корзину",
     confirmation: {
@@ -324,6 +332,11 @@ export const ru: Dictionary = {
       number: "Номер заказа",
       callback: ". Мы свяжемся с вами по указанному номеру телефона.",
       toPay: "К оплате за товары",
+      itemsTotal: "Товары",
+      discount: "Скидка −{percent}%",
+      firstCustomerTitle: "Поздравляем! Вы наш первый покупатель 🎉",
+      firstCustomerText:
+        "Поэтому дарим скидку {percent}% на этот заказ — она уже учтена в сумме.",
       delivery: "Доставка",
       deliveryValue: "Оплачивается перевозчику при получении",
       payment: "Оплата",
