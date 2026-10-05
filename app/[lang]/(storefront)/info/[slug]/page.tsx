@@ -21,10 +21,13 @@ export async function generateMetadata({
   params,
 }: PageProps<"/[lang]/info/[slug]">): Promise<Metadata> {
   const { slug } = await params;
-  const { t } = await getI18n();
+  const { t, locale } = await getI18n();
   const page = await loadPage(slug);
   return page
-    ? { title: page.title, alternates: languageAlternates(`/info/${slug}`) }
+    ? {
+        title: page.title,
+        alternates: languageAlternates(`/info/${slug}`, locale),
+      }
     : { title: t.notFound.title };
 }
 

@@ -22,6 +22,8 @@ import { localizeCategory, localizeProduct } from "@/lib/i18n/catalog";
 import { colorName } from "@/lib/i18n/colors";
 import { languageAlternates } from "@/lib/i18n/metadata";
 import { getI18n } from "@/lib/i18n/server";
+import { JsonLd } from "@/components/seo/json-ld";
+import { breadcrumbJsonLd, productJsonLd } from "@/lib/seo/structured-data";
 import { telHref } from "@/lib/utils/format";
 import { EMPTY_STORE_INFO } from "@/lib/validators/store-info";
 
@@ -41,7 +43,7 @@ export async function generateMetadata({
   return {
     title: product.name,
     description: product.description,
-    alternates: languageAlternates(`/product/${slug}`),
+    alternates: languageAlternates(`/product/${slug}`, locale),
     openGraph: {
       title: product.name,
       description: product.description,
@@ -103,6 +105,24 @@ export default async function ProductPage({
 
   return (
     <div className="mx-auto max-w-[1440px] px-page pb-16 pt-6 sm:pb-24 sm:pt-10">
+      <JsonLd data={productJsonLd(product, locale, category?.name)} />
+      <JsonLd
+        data={breadcrumbJsonLd(
+          [
+            { name: t.product.catalog, path: "/catalog" },
+            ...(category
+              ? [
+                  {
+                    name: category.name,
+                    path: `/catalog?category=${category.slug}`,
+                  },
+                ]
+              : []),
+            { name: product.name },
+          ],
+          locale,
+        )}
+      />
       <nav aria-label={t.product.breadcrumb} className="mb-5 sm:mb-8">
         <ol className="flex min-w-0 items-center gap-1.5 text-[0.66rem] uppercase tracking-[0.16em] text-muted">
           <li>

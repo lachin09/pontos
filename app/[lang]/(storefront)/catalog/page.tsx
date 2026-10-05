@@ -20,11 +20,11 @@ import { formatPrice } from "@/lib/utils/format";
 import { filterAndSortProducts } from "@/services/product.service";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { t } = await getI18n();
+  const { t, locale } = await getI18n();
   return {
     title: t.catalog.metaTitle,
     description: t.catalog.metaDescription,
-    alternates: languageAlternates("/catalog"),
+    alternates: languageAlternates("/catalog", locale),
   };
 }
 

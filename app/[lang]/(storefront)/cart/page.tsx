@@ -4,11 +4,11 @@ import { languageAlternates } from "@/lib/i18n/metadata";
 import { getI18n } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
-  const { t } = await getI18n();
+  const { t, locale } = await getI18n();
   return {
     title: t.cart.metaTitle,
     description: t.cart.metaDescription,
-    alternates: languageAlternates("/cart"),
+    alternates: languageAlternates("/cart", locale),
   };
 }
 

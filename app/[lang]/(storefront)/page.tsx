@@ -26,6 +26,8 @@ import {
 import { localizeCategory, localizeProduct } from "@/lib/i18n/catalog";
 import type { Locale } from "@/lib/i18n/config";
 import { getI18n } from "@/lib/i18n/server";
+import { JsonLd } from "@/components/seo/json-ld";
+import { storeJsonLd } from "@/lib/seo/structured-data";
 import { formatPrice, telHref } from "@/lib/utils/format";
 import { EMPTY_STORE_INFO } from "@/lib/validators/store-info";
 import type { Product } from "@/types/product";
@@ -137,6 +139,9 @@ export default async function HomePage() {
     (link) => link.kind === "instagram",
   );
   const InstagramIcon = contactIcons.instagram;
+  const socialLinks = resolveContactLinks(contactRecords)
+    .filter((link) => link.kind === "instagram" || link.kind === "tiktok")
+    .map((link) => link.href);
 
   const tabs = [
     newProducts.length > 0
@@ -188,6 +193,7 @@ export default async function HomePage() {
 
   return (
     <>
+      <JsonLd data={storeJsonLd(seller, socialLinks)} />
       <HeroSlider
         slides={hero.map((product) => ({
           id: product.id,
