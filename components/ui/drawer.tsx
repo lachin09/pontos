@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { useId, useRef, type ReactNode } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { useDialogBehavior } from "@/components/ui/use-dialog-behavior";
 import { useI18n } from "@/lib/i18n/client";
@@ -33,7 +34,9 @@ export function Drawer({
       ? "right-0 border-l animate-slide-in-right"
       : "left-0 border-r animate-fade-in";
 
-  return (
+  // Rendered at the body: inside the header, its backdrop filter would make
+  // the "fixed" overlay position relative to the header and clip the drawer.
+  return createPortal(
     <div
       className="fixed inset-0 z-50 animate-fade-in bg-foreground/40 backdrop-blur-[2px]"
       onMouseDown={(event) => {
@@ -70,6 +73,7 @@ export function Drawer({
           {children}
         </div>
       </section>
-    </div>
+    </div>,
+    document.body,
   );
 }

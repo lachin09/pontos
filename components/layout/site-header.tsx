@@ -47,42 +47,44 @@ export async function SiteHeader() {
   return (
     <>
       <div className="bg-ink text-[0.66rem] tracking-[0.14em] text-white/75 sm:text-[0.7rem]">
-        <div className="mx-auto flex min-h-9 max-w-[1440px] flex-wrap items-center justify-center gap-x-6 gap-y-1 px-page py-2 sm:justify-between">
-          <p className="text-center uppercase sm:whitespace-nowrap">
+        <div className="mx-auto flex min-h-9 max-w-[1440px] items-center justify-between gap-x-4 px-page py-2 sm:flex-wrap sm:gap-x-6 sm:gap-y-1">
+          <p className="min-w-0 flex-1 uppercase sm:flex-none sm:whitespace-nowrap">
             {t.header.delivery}
             <span className="mx-2.5 text-gold" aria-hidden="true">
               ·
             </span>
             {t.header.payment}
           </p>
-          <div className="hidden flex-wrap items-center justify-center gap-x-5 gap-y-1 sm:flex">
-            {phone || address ? (
-              <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
-                {address && mapHref ? (
-                  <AddressLink
-                    address={shortAddress(address)}
-                    href={mapHref}
-                    label={t.header.openMap}
-                    className="flex items-center gap-1.5 whitespace-nowrap normal-case tracking-[0.06em] text-white/70 transition-colors hover:text-gold"
-                    iconClassName="text-gold"
-                  />
-                ) : null}
-                {seller?.workingHours ? (
-                  <span className="whitespace-nowrap text-white/55">
-                    {seller.workingHours}
-                  </span>
-                ) : null}
-                {phone ? (
-                  <a
-                    href={telHref(phone)}
-                    className="whitespace-nowrap text-white transition-colors hover:text-gold"
-                  >
-                    {phone}
-                  </a>
-                ) : null}
-              </p>
-            ) : null}
-            <LanguageSwitcher className="text-white/60" />
+          <div className="flex shrink-0 items-center gap-x-5 sm:min-w-0 sm:shrink sm:flex-wrap sm:justify-end sm:gap-y-1">
+            <div className="hidden min-w-0 flex-wrap items-center justify-end gap-x-5 gap-y-1 sm:flex">
+              {phone || address ? (
+                <p className="flex flex-wrap items-center justify-center gap-x-4 gap-y-1">
+                  {address && mapHref ? (
+                    <AddressLink
+                      address={shortAddress(address)}
+                      href={mapHref}
+                      label={t.header.openMap}
+                      className="flex items-center gap-1.5 whitespace-nowrap normal-case tracking-[0.06em] text-white/70 transition-colors hover:text-gold"
+                      iconClassName="text-gold"
+                    />
+                  ) : null}
+                  {seller?.workingHours ? (
+                    <span className="whitespace-nowrap text-white/55">
+                      {seller.workingHours}
+                    </span>
+                  ) : null}
+                  {phone ? (
+                    <a
+                      href={telHref(phone)}
+                      className="whitespace-nowrap text-white transition-colors hover:text-gold"
+                    >
+                      {phone}
+                    </a>
+                  ) : null}
+                </p>
+              ) : null}
+            </div>
+            <LanguageSwitcher className="shrink-0 text-white/60" />
           </div>
         </div>
       </div>
